@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 
 export async function POST(req: Request) {
-  const { name, email, password, role } = await req.json();
+  const { name, email, phone, password, role } = await req.json();
   const normalizedRole = String(role || "").toUpperCase() as Role;
   const allowedRoles = Object.values(Role);
 
@@ -27,8 +27,14 @@ export async function POST(req: Request) {
       email,
       password: hashedPassword,
       role: normalizedRole,
+      phone,
     },
   });
 
-  return Response.json(user);
+  return Response.json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  });
 }
