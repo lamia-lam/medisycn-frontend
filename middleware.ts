@@ -1,38 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const role = request.cookies.get("role")?.value?.toLowerCase();
-  const token = request.cookies.get("token")?.value;
-  const path = request.nextUrl.pathname;
+// 🔐 Map routes → allowed roles
+const protectedRoutes: Record<string, string[]> = {
+  "/doctor-dashboard": ["DOCTOR"],
+  "/patient-dashboard": ["PATIENT"],
+  "/pharmacy-dashboard": ["PHARMACY"],
+  "/diagnostic-dashboard": ["DIAGNOSTIC"],
+};
 
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+//  Decode JWT
+function parseJwt(token: string) {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = Buffer.from(payload, "base64").toString("utf-8");
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error("Invalid token", error);
+    return null;
+  }
+}
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Skip public routes
+  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+    return NextResponse.next();
   }
 
-  if (path.startsWith("/doctor-dashboard") && role !== "doctor") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  //  Check protected routes
+  for (const route in protectedRoutes) {
+    if (pathname.startsWith(route)) {
+      const token = req.cookies.get("token")?.value;
 
-  if (path.startsWith("/patient-dashboard") && role !== "patient") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+      //  No token → login
+      if (!token) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
 
-  if (path.startsWith("/diagnostic-dashboard") && role !== "diagnostic") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+      //  Decode token
+      const data = parseJwt(token);
 
-  if (path.startsWith("/pharmacy-dashboard") && role !== "pharmacy") {
-    return NextResponse.redirect(new URL("/login", request.url));
+      if (!data) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+
+      const userRole = data.role; // "DOCTOR"
+      const allowedRoles = protectedRoutes[route];
+
+      //  Role not allowed
+      if (!allowedRoles.includes(userRole)) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    }
   }
 
   return NextResponse.next();
 }
 
+//  Apply middleware only to protected routes
 export const config = {
   matcher: [
     "/doctor-dashboard/:path*",
     "/patient-dashboard/:path*",
-    "/diagnostic-dashboard/:path*",
     "/pharmacy-dashboard/:path*",
+    "/diagnostic-dashboard/:path*",
   ],
 };

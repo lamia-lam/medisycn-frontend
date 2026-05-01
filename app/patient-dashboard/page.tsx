@@ -11,7 +11,7 @@ export default function PatientDashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
 
-    router.push("/login");
+    router.replace("/login");
   };
 
   return (

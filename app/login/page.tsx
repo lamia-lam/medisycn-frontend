@@ -29,17 +29,16 @@ export default function LoginPage() {
       return;
     }
 
-    // 🔒 SAME FUNCTIONALITY (unchanged)
     document.cookie = `token=${data.token}; path=/; max-age=86400`;
-    document.cookie = `role=${String(data.role).toLowerCase()}; path=/; max-age=86400; SameSite=Strict`;
+    //document.cookie = `role=${String(data.role).toLowerCase()}; path=/; max-age=86400; SameSite=Strict`;
     if (data.role === "DOCTOR") {
-      router.push("/doctor-dashboard");
+      router.replace("/doctor-dashboard");
     } else if (data.role === "PATIENT") {
-      router.push("/patient-dashboard");
+      router.replace("/patient-dashboard");
     } else if (data.role === "DIAGNOSTIC") {
-      router.push("/diagnostic-dashboard");
+      router.replace("/diagnostic-dashboard");
     } else {
-      router.push("/pharmacy-dashboard");
+      router.replace("/pharmacy-dashboard");
     }
   };
 
@@ -108,7 +107,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => router.push("/register")}
+              onClick={() => router.replace("/register")}
               className="text-cyan-600 font-medium"
             >
               Don’t have an account? Register

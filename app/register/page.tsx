@@ -71,7 +71,7 @@ export default function RegisterPage() {
       }
 
       alert("Registration Successful");
-      router.push("/login");
+      router.replace("/login");
     } catch (error) {
       console.error(error);
       alert("Something went wrong. Try again.");
@@ -239,7 +239,7 @@ export default function RegisterPage() {
           {/* Footer */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.replace("/login")}
               className="text-cyan-600 font-medium"
             >
               Already have an account? Sign in
