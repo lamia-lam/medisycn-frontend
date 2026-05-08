@@ -9,6 +9,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatCard } from "../components/StatCard";
 
@@ -21,17 +22,17 @@ const sidebarItems = [
   {
     icon: <Users className="w-5 h-5" />,
     label: "Patients",
-    href: "/doctor-dashboard",
+    href: "/doctor-dashboard/patients",
   },
   {
     icon: <FileText className="w-5 h-5" />,
     label: "Prescriptions",
-    href: "/doctor-dashboard",
+    href: "/doctor-dashboard/prescriptions",
   },
   {
     icon: <Calendar className="w-5 h-5" />,
     label: "Appointments",
-    href: "/doctor-dashboard",
+    href: "/doctor-dashboard/appointments",
   },
 ];
 
@@ -78,6 +79,7 @@ const recentPatients = [
 ];
 
 export default function DoctorDashboard() {
+  const router = useRouter();
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
@@ -90,7 +92,10 @@ export default function DoctorDashboard() {
               Here's what's happening today
             </p>
           </div>
-          <button className="bg-cyan-600 text-white px-5 py-2.5 rounded-lg hover:bg-[#099e9e] transition-colors flex items-center justify-center gap-2 font-medium">
+          <button
+            onClick={() => router.push("/doctor-dashboard/prescriptions/new")}
+            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+          >
             <Plus className="w-5 h-5" />
             New Prescription
           </button>

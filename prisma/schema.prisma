@@ -18,8 +18,113 @@ model User {
   id        Int    @id @default(autoincrement())
   name      String
   email     String @unique
-  phone     String?
+  phone String? @unique
   password  String
   role      Role
   createdAt DateTime @default(now())
+
+  doctor  Doctor?
+patient Patient?
+}
+
+model Doctor {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+
+  specialization String?
+  department     String?
+  designation    String?
+  license        String?
+  avatar         String?
+
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  patients       DoctorPatient[]
+  prescriptions  Prescription[]
+  appointments   Appointment[]
+}
+
+model Patient {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+
+  age           Int?
+  gender        String?
+  bloodGroup    String?
+  condition     String?
+  address       String?
+  status        String   @default("Active")
+
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  doctors       DoctorPatient[]
+  prescriptions Prescription[]
+  appointments  Appointment[]
+  histories     MedicalHistory[]
+}
+
+model DoctorPatient {
+  id        Int      @id @default(autoincrement())
+
+  doctorId  Int
+  patientId Int
+
+  createdAt DateTime @default(now())
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@unique([doctorId, patientId])
+}
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+
+  doctorId    Int
+  patientId   Int
+
+  date        DateTime
+  type        String?
+  notes       String?
+  status      String   @default("Pending")
+
+  createdAt   DateTime @default(now())
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+}
+
+model Prescription {
+  id            Int      @id @default(autoincrement())
+
+  doctorId      Int
+  patientId     Int
+
+  diagnosis     String
+  symptoms      String?
+  medicines     Json
+  notes         String?
+
+  createdAt     DateTime @default(now())
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+}
+
+model MedicalHistory {
+  id          Int      @id @default(autoincrement())
+
+  patientId   Int
+
+  title       String
+  description String
+  type        String
+
+  createdAt   DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
 }

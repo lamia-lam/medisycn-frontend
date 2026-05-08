@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { LogOut, X, Bell } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { DoctorProfileDrawer } from "./DoctorProfileDrawer";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -22,6 +23,8 @@ export function DashboardLayout({
   userRole,
 }: DashboardLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogout = () => {
     document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -50,7 +53,12 @@ export function DashboardLayout({
 
         <nav className="flex-1 px-3 space-y-1 mt-6 overflow-y-auto">
           {sidebarItems.map((item, index) => {
-            const isActive = index === 1; // Hardcoding active state based on screenshot (Patients active) for now, usually based on pathname
+            // Use exact match for the root dashboard route.
+            // For deeper routes (e.g. /patients, /prescriptions), also match sub-paths.
+            const isExactRoot = item.href.split("/").filter(Boolean).length <= 1;
+            const isActive =
+              pathname === item.href ||
+              (!isExactRoot && pathname.startsWith(item.href + "/"));
             return (
               <a
                 key={index}
@@ -96,14 +104,17 @@ export function DashboardLayout({
               <Bell className="w-5 h-5" />
               <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
             </button>
-            <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsProfileOpen(true)}
+              className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-1.5 -mr-1.5 rounded-lg transition-colors cursor-pointer text-left"
+            >
               <div className="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-medium text-sm">
                 D
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {userRole}
               </span>
-            </div>
+            </button>
           </div>
         </header>
 
@@ -112,6 +123,11 @@ export function DashboardLayout({
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
+
+      <DoctorProfileDrawer
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </div>
   );
 }
