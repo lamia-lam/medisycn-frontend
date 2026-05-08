@@ -129,13 +129,16 @@ export default function PrescriptionsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const activeCount = prescriptionsData.filter((p) => p.status === "Active").length;
-  const completedCount = prescriptionsData.filter((p) => p.status === "Completed").length;
+  const activeCount = prescriptionsData.filter(
+    (p) => p.status === "Active",
+  ).length;
+  const completedCount = prescriptionsData.filter(
+    (p) => p.status === "Completed",
+  ).length;
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
-
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -191,7 +194,9 @@ export default function PrescriptionsPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
                   {stat.label}
                 </p>
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold ${stat.color}`}>
+                  {stat.value}
+                </p>
               </div>
             </div>
           ))}
@@ -199,7 +204,6 @@ export default function PrescriptionsPage() {
 
         {/* Card Container */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-
           {/* Search & Filter */}
           <div className="p-6 border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -258,7 +262,9 @@ export default function PrescriptionsPage() {
                         <p className="font-semibold text-gray-800 dark:text-white text-sm">
                           {prescription.patient}
                         </p>
-                        <p className="text-xs text-gray-400">{prescription.patientId}</p>
+                        <p className="text-xs text-gray-400">
+                          {prescription.patientId}
+                        </p>
                       </div>
                     </div>
                     <Badge
@@ -298,7 +304,7 @@ export default function PrescriptionsPage() {
                     <button
                       onClick={() =>
                         router.push(
-                          `/doctor-dashboard/prescriptions/${prescription.id}`
+                          `/doctor-dashboard/prescriptions/${prescription.id}`,
                         )
                       }
                       className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border border-cyan-500 text-cyan-600 dark:text-cyan-400 rounded-lg hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 transition-colors text-sm font-medium"

@@ -136,13 +136,17 @@ const initialAppointments: Appointment[] = [
 ];
 
 const typeColors: Record<string, string> = {
-  Consultation: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-  "Follow-up": "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  "Check-up": "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  Consultation:
+    "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+  "Follow-up":
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+  "Check-up":
+    "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
 };
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+  const [appointments, setAppointments] =
+    useState<Appointment[]>(initialAppointments);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [rescheduleModal, setRescheduleModal] = useState<number | null>(null);
@@ -151,13 +155,15 @@ export default function AppointmentsPage() {
 
   const handleConfirm = (id: number) => {
     setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: "Confirmed" } : apt))
+      prev.map((apt) =>
+        apt.id === id ? { ...apt, status: "Confirmed" } : apt,
+      ),
     );
   };
 
   const handleDecline = (id: number) => {
     setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: "Declined" } : apt))
+      prev.map((apt) => (apt.id === id ? { ...apt, status: "Declined" } : apt)),
     );
   };
 
@@ -172,9 +178,14 @@ export default function AppointmentsPage() {
       setAppointments((prev) =>
         prev.map((apt) =>
           apt.id === id
-            ? { ...apt, date: rescheduleDate, time: formatted, status: "Confirmed" }
-            : apt
-        )
+            ? {
+                ...apt,
+                date: rescheduleDate,
+                time: formatted,
+                status: "Confirmed",
+              }
+            : apt,
+        ),
       );
       setRescheduleModal(null);
       setRescheduleDate("");
@@ -202,7 +213,6 @@ export default function AppointmentsPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
-
         {/* Page Header */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-1">
@@ -262,7 +272,9 @@ export default function AppointmentsPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
                   {stat.label}
                 </p>
-                <p className={`text-2xl font-bold ${stat.valueColor}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold ${stat.valueColor}`}>
+                  {stat.value}
+                </p>
               </div>
             </div>
           ))}
@@ -270,7 +282,6 @@ export default function AppointmentsPage() {
 
         {/* Main Panel */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-
           {/* Search & Filter */}
           <div className="p-6 border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -332,8 +343,8 @@ export default function AppointmentsPage() {
                           appointment.status === "Confirmed"
                             ? "success"
                             : appointment.status === "Declined"
-                            ? "danger"
-                            : "warning"
+                              ? "danger"
+                              : "warning"
                         }
                       >
                         {appointment.status}

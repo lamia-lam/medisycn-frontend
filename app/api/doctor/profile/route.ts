@@ -82,6 +82,9 @@ export async function PUT(req: Request) {
     return Response.json(doctor);
   } catch (error) {
     console.error(error);
-    return Response.json({ error: "Failed to update profile" }, { status: 500 });
+    return Response.json(
+      { error: "Failed to update profile" },
+      { status: 500 },
+    );
   }
 }

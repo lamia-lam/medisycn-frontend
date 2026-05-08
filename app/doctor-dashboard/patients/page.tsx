@@ -160,11 +160,9 @@ export default function PatientsPage() {
       patient.phone.includes(searchQuery) ||
       patient.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGender =
-      filterGender === "all" ||
-      patient.gender.toLowerCase() === filterGender;
+      filterGender === "all" || patient.gender.toLowerCase() === filterGender;
     const matchesStatus =
-      filterStatus === "all" ||
-      patient.status.toLowerCase() === filterStatus;
+      filterStatus === "all" || patient.status.toLowerCase() === filterStatus;
     return matchesSearch && matchesGender && matchesStatus;
   });
 
@@ -190,13 +188,38 @@ export default function PatientsPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total Patients", value: patientsData.length, color: "text-cyan-600", bg: "bg-cyan-50 dark:bg-cyan-900/20" },
-            { label: "Active", value: patientsData.filter(p => p.status === "Active").length, color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
-            { label: "Critical", value: patientsData.filter(p => p.status === "Critical").length, color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
-            { label: "Inactive", value: patientsData.filter(p => p.status === "Inactive").length, color: "text-gray-500", bg: "bg-gray-50 dark:bg-gray-800" },
+            {
+              label: "Total Patients",
+              value: patientsData.length,
+              color: "text-cyan-600",
+              bg: "bg-cyan-50 dark:bg-cyan-900/20",
+            },
+            {
+              label: "Active",
+              value: patientsData.filter((p) => p.status === "Active").length,
+              color: "text-green-600",
+              bg: "bg-green-50 dark:bg-green-900/20",
+            },
+            {
+              label: "Critical",
+              value: patientsData.filter((p) => p.status === "Critical").length,
+              color: "text-red-600",
+              bg: "bg-red-50 dark:bg-red-900/20",
+            },
+            {
+              label: "Inactive",
+              value: patientsData.filter((p) => p.status === "Inactive").length,
+              color: "text-gray-500",
+              bg: "bg-gray-50 dark:bg-gray-800",
+            },
           ].map((stat) => (
-            <div key={stat.label} className={`${stat.bg} rounded-xl p-4 border border-transparent`}>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{stat.label}</p>
+            <div
+              key={stat.label}
+              className={`${stat.bg} rounded-xl p-4 border border-transparent`}
+            >
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                {stat.label}
+              </p>
               <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
@@ -335,7 +358,7 @@ export default function PatientsPage() {
                         <button
                           onClick={() =>
                             router.push(
-                              `/doctor-dashboard/patients/${patient.id}/history`
+                              `/doctor-dashboard/patients/${patient.id}/history`,
                             )
                           }
                           title="View History"

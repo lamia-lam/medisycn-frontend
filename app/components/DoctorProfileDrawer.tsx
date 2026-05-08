@@ -122,17 +122,30 @@ export function DoctorProfileDrawer({
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-3xl font-semibold relative overflow-hidden">
               {formData.avatar ? (
-                <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <img
+                  src={formData.avatar}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                formData.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "DR"
+                formData.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase() || "DR"
               )}
               <button className="absolute bottom-0 right-0 w-6 h-6 bg-white dark:bg-gray-800 text-cyan-600 dark:text-cyan-400 rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors">
                 <Upload className="w-3 h-3" />
               </button>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-0.5">{loading ? "Loading..." : formData.name}</h3>
-              <p className="text-sm text-white/90">{formData.specialization || "Add specialization"}</p>
+              <h3 className="text-lg font-semibold mb-0.5">
+                {loading ? "Loading..." : formData.name}
+              </h3>
+              <p className="text-sm text-white/90">
+                {formData.specialization || "Add specialization"}
+              </p>
             </div>
           </div>
         </div>
@@ -174,7 +187,9 @@ export function DoctorProfileDrawer({
                     disabled
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Sourced from your login credentials</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Sourced from your login credentials
+                </p>
               </div>
 
               <div>
@@ -239,7 +254,9 @@ export function DoctorProfileDrawer({
                     disabled
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Sourced from your login credentials</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Sourced from your login credentials
+                </p>
               </div>
 
               <div>
@@ -253,11 +270,13 @@ export function DoctorProfileDrawer({
                     disabled
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Sourced from your login credentials</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Sourced from your login credentials
+                </p>
               </div>
 
               <div className="pt-2">
-                <button 
+                <button
                   onClick={handleSaveProfile}
                   disabled={saving || loading}
                   className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"

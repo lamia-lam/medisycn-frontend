@@ -43,10 +43,34 @@ const sidebarItems = [
 ];
 
 const patientsOptions = [
-  { id: "P001", name: "John Doe", age: 45, gender: "Male", phone: "+1 (555) 123-4567" },
-  { id: "P002", name: "Jane Smith", age: 32, gender: "Female", phone: "+1 (555) 234-5678" },
-  { id: "P003", name: "Mike Johnson", age: 28, gender: "Male", phone: "+1 (555) 345-6789" },
-  { id: "P004", name: "Sarah Williams", age: 55, gender: "Female", phone: "+1 (555) 456-7890" },
+  {
+    id: "P001",
+    name: "John Doe",
+    age: 45,
+    gender: "Male",
+    phone: "+1 (555) 123-4567",
+  },
+  {
+    id: "P002",
+    name: "Jane Smith",
+    age: 32,
+    gender: "Female",
+    phone: "+1 (555) 234-5678",
+  },
+  {
+    id: "P003",
+    name: "Mike Johnson",
+    age: 28,
+    gender: "Male",
+    phone: "+1 (555) 345-6789",
+  },
+  {
+    id: "P004",
+    name: "Sarah Williams",
+    age: 55,
+    gender: "Female",
+    phone: "+1 (555) 456-7890",
+  },
 ];
 
 const medicinesOptions = [
@@ -102,7 +126,11 @@ export default function NewPrescriptionPage() {
   const removeMedicine = (index: number) =>
     setMedicines(medicines.filter((_, i) => i !== index));
 
-  const updateMedicine = (index: number, field: keyof Medicine, value: string) => {
+  const updateMedicine = (
+    index: number,
+    field: keyof Medicine,
+    value: string,
+  ) => {
     const updated = [...medicines];
     updated[index][field] = value;
     setMedicines(updated);
@@ -114,7 +142,9 @@ export default function NewPrescriptionPage() {
     setTimeout(() => router.push("/doctor-dashboard/prescriptions"), 1500);
   };
 
-  const selectedPatientData = patientsOptions.find((p) => p.id === selectedPatient);
+  const selectedPatientData = patientsOptions.find(
+    (p) => p.id === selectedPatient,
+  );
 
   if (submitted) {
     return (
@@ -137,7 +167,6 @@ export default function NewPrescriptionPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6 max-w-4xl">
-
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
@@ -158,7 +187,6 @@ export default function NewPrescriptionPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           {/* ── Patient Information ── */}
           <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
@@ -198,7 +226,8 @@ export default function NewPrescriptionPage() {
                       {selectedPatientData.name}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {selectedPatientData.age} years · {selectedPatientData.gender}
+                      {selectedPatientData.age} years ·{" "}
+                      {selectedPatientData.gender}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {selectedPatientData.phone}
@@ -305,7 +334,9 @@ export default function NewPrescriptionPage() {
                       <label className={labelClass}>Medicine Name</label>
                       <select
                         value={medicine.name}
-                        onChange={(e) => updateMedicine(index, "name", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "name", e.target.value)
+                        }
                         className={inputClass}
                         required
                       >
@@ -323,7 +354,9 @@ export default function NewPrescriptionPage() {
                       <input
                         type="text"
                         value={medicine.dosage}
-                        onChange={(e) => updateMedicine(index, "dosage", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "dosage", e.target.value)
+                        }
                         placeholder="e.g., 1 tablet, 2 capsules"
                         className={inputClass}
                         required
@@ -334,7 +367,9 @@ export default function NewPrescriptionPage() {
                       <label className={labelClass}>Frequency</label>
                       <select
                         value={medicine.frequency}
-                        onChange={(e) => updateMedicine(index, "frequency", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "frequency", e.target.value)
+                        }
                         className={inputClass}
                       >
                         <option>Once daily</option>
@@ -351,7 +386,9 @@ export default function NewPrescriptionPage() {
                       <label className={labelClass}>Timing</label>
                       <select
                         value={medicine.timing}
-                        onChange={(e) => updateMedicine(index, "timing", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "timing", e.target.value)
+                        }
                         className={inputClass}
                       >
                         <option>Morning</option>
@@ -368,7 +405,9 @@ export default function NewPrescriptionPage() {
                       <label className={labelClass}>Duration</label>
                       <select
                         value={medicine.duration}
-                        onChange={(e) => updateMedicine(index, "duration", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "duration", e.target.value)
+                        }
                         className={inputClass}
                       >
                         <option>3 days</option>

@@ -97,7 +97,6 @@ export default function PrescriptionViewerPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
-
         {/* ── Top Action Bar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -136,7 +135,6 @@ export default function PrescriptionViewerPage() {
 
         {/* ── Prescription Document ── */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-
           {/* Hospital Header Banner */}
           <div className="bg-gradient-to-r from-cyan-500 via-cyan-600 to-blue-600 text-white px-8 py-10 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 mb-4">
@@ -149,7 +147,6 @@ export default function PrescriptionViewerPage() {
 
           {/* Document Body */}
           <div className="p-8 space-y-7">
-
             {/* Doctor + Patient */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
@@ -157,10 +154,18 @@ export default function PrescriptionViewerPage() {
                   Doctor Information
                 </p>
                 <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1">
-                  <p className="font-semibold text-gray-800 dark:text-white">{rx.doctor.name}</p>
-                  <p className="text-sm text-cyan-600 dark:text-cyan-400">{rx.doctor.specialization}</p>
-                  <p className="text-sm text-gray-500">License: {rx.doctor.license}</p>
-                  <p className="text-sm text-gray-500">Phone: {rx.doctor.phone}</p>
+                  <p className="font-semibold text-gray-800 dark:text-white">
+                    {rx.doctor.name}
+                  </p>
+                  <p className="text-sm text-cyan-600 dark:text-cyan-400">
+                    {rx.doctor.specialization}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    License: {rx.doctor.license}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Phone: {rx.doctor.phone}
+                  </p>
                 </div>
               </div>
 
@@ -169,7 +174,9 @@ export default function PrescriptionViewerPage() {
                   Patient Information
                 </p>
                 <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1">
-                  <p className="font-semibold text-gray-800 dark:text-white">{rx.patient.name}</p>
+                  <p className="font-semibold text-gray-800 dark:text-white">
+                    {rx.patient.name}
+                  </p>
                   <p className="text-sm text-gray-500">ID: {rx.patient.id}</p>
                   <p className="text-sm text-gray-500">
                     {rx.patient.age} years · {rx.patient.gender}
@@ -184,11 +191,15 @@ export default function PrescriptionViewerPage() {
             <div className="grid grid-cols-2 gap-5">
               <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
                 <p className="text-xs text-gray-400 mb-1">Date Issued</p>
-                <p className="font-medium text-gray-800 dark:text-white">{rx.date}</p>
+                <p className="font-medium text-gray-800 dark:text-white">
+                  {rx.date}
+                </p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
                 <p className="text-xs text-gray-400 mb-1">Prescription ID</p>
-                <p className="font-mono font-medium text-gray-800 dark:text-white">{rx.id}</p>
+                <p className="font-mono font-medium text-gray-800 dark:text-white">
+                  {rx.id}
+                </p>
               </div>
             </div>
 
@@ -198,7 +209,9 @@ export default function PrescriptionViewerPage() {
                 Diagnosis
               </p>
               <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-4">
-                <p className="text-gray-800 dark:text-white font-medium">{rx.diagnosis}</p>
+                <p className="text-gray-800 dark:text-white font-medium">
+                  {rx.diagnosis}
+                </p>
               </div>
             </div>
 
@@ -208,7 +221,9 @@ export default function PrescriptionViewerPage() {
                 Presenting Symptoms
               </p>
               <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
-                <p className="text-gray-700 dark:text-gray-300">{rx.symptoms}</p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {rx.symptoms}
+                </p>
               </div>
             </div>
 
@@ -233,7 +248,8 @@ export default function PrescriptionViewerPage() {
                           </span>
                         </p>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          {medicine.dosage} · {medicine.frequency} · {medicine.timing}
+                          {medicine.dosage} · {medicine.frequency} ·{" "}
+                          {medicine.timing}
                         </p>
                       </div>
                       <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
@@ -280,14 +296,18 @@ export default function PrescriptionViewerPage() {
             {/* Signature Row */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6 flex items-end justify-between gap-6">
               <div>
-                <p className="text-xs text-gray-400 mb-3">Authorized Signature</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  Authorized Signature
+                </p>
                 <div className="w-52 border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2">
                   <p className="text-2xl italic text-gray-700 dark:text-gray-300 font-serif">
                     {rx.doctor.name}
                   </p>
                 </div>
                 <p className="text-sm text-gray-500">{rx.doctor.name}</p>
-                <p className="text-xs text-gray-400">{rx.doctor.specialization}</p>
+                <p className="text-xs text-gray-400">
+                  {rx.doctor.specialization}
+                </p>
               </div>
 
               <div className="text-right">
@@ -301,7 +321,6 @@ export default function PrescriptionViewerPage() {
                 <p className="text-xs text-gray-400">MediSync Health System</p>
               </div>
             </div>
-
           </div>
         </div>
       </div>

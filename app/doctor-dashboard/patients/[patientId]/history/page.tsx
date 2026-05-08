@@ -44,18 +44,108 @@ const sidebarItems = [
 ];
 
 // Lookup map so each patient ID has their own info
-const patientInfoMap: Record<string, {
-  id: string; name: string; age: number; gender: string;
-  phone: string; email: string; bloodGroup: string; condition: string; initials: string;
-}> = {
-  P001: { id: "P001", name: "John Doe", age: 45, gender: "Male", phone: "+1 (555) 123-4567", email: "john.doe@email.com", bloodGroup: "A+", condition: "Hypertension", initials: "JD" },
-  P002: { id: "P002", name: "Jane Smith", age: 32, gender: "Female", phone: "+1 (555) 234-5678", email: "jane.smith@email.com", bloodGroup: "B+", condition: "Type 2 Diabetes", initials: "JS" },
-  P003: { id: "P003", name: "Mike Johnson", age: 28, gender: "Male", phone: "+1 (555) 345-6789", email: "mike.j@email.com", bloodGroup: "O+", condition: "Asthma", initials: "MJ" },
-  P004: { id: "P004", name: "Sarah Williams", age: 55, gender: "Female", phone: "+1 (555) 456-7890", email: "sarah.w@email.com", bloodGroup: "AB-", condition: "Arthritis", initials: "SW" },
-  P005: { id: "P005", name: "Robert Brown", age: 62, gender: "Male", phone: "+1 (555) 567-8901", email: "robert.b@email.com", bloodGroup: "O-", condition: "Heart Disease", initials: "RB" },
-  P006: { id: "P006", name: "Emily Davis", age: 38, gender: "Female", phone: "+1 (555) 678-9012", email: "emily.d@email.com", bloodGroup: "A-", condition: "Migraine", initials: "ED" },
-  P007: { id: "P007", name: "David Wilson", age: 41, gender: "Male", phone: "+1 (555) 789-0123", email: "david.w@email.com", bloodGroup: "B-", condition: "Thyroid Disorder", initials: "DW" },
-  P008: { id: "P008", name: "Lisa Anderson", age: 29, gender: "Female", phone: "+1 (555) 890-1234", email: "lisa.a@email.com", bloodGroup: "AB+", condition: "Anemia", initials: "LA" },
+const patientInfoMap: Record<
+  string,
+  {
+    id: string;
+    name: string;
+    age: number;
+    gender: string;
+    phone: string;
+    email: string;
+    bloodGroup: string;
+    condition: string;
+    initials: string;
+  }
+> = {
+  P001: {
+    id: "P001",
+    name: "John Doe",
+    age: 45,
+    gender: "Male",
+    phone: "+1 (555) 123-4567",
+    email: "john.doe@email.com",
+    bloodGroup: "A+",
+    condition: "Hypertension",
+    initials: "JD",
+  },
+  P002: {
+    id: "P002",
+    name: "Jane Smith",
+    age: 32,
+    gender: "Female",
+    phone: "+1 (555) 234-5678",
+    email: "jane.smith@email.com",
+    bloodGroup: "B+",
+    condition: "Type 2 Diabetes",
+    initials: "JS",
+  },
+  P003: {
+    id: "P003",
+    name: "Mike Johnson",
+    age: 28,
+    gender: "Male",
+    phone: "+1 (555) 345-6789",
+    email: "mike.j@email.com",
+    bloodGroup: "O+",
+    condition: "Asthma",
+    initials: "MJ",
+  },
+  P004: {
+    id: "P004",
+    name: "Sarah Williams",
+    age: 55,
+    gender: "Female",
+    phone: "+1 (555) 456-7890",
+    email: "sarah.w@email.com",
+    bloodGroup: "AB-",
+    condition: "Arthritis",
+    initials: "SW",
+  },
+  P005: {
+    id: "P005",
+    name: "Robert Brown",
+    age: 62,
+    gender: "Male",
+    phone: "+1 (555) 567-8901",
+    email: "robert.b@email.com",
+    bloodGroup: "O-",
+    condition: "Heart Disease",
+    initials: "RB",
+  },
+  P006: {
+    id: "P006",
+    name: "Emily Davis",
+    age: 38,
+    gender: "Female",
+    phone: "+1 (555) 678-9012",
+    email: "emily.d@email.com",
+    bloodGroup: "A-",
+    condition: "Migraine",
+    initials: "ED",
+  },
+  P007: {
+    id: "P007",
+    name: "David Wilson",
+    age: 41,
+    gender: "Male",
+    phone: "+1 (555) 789-0123",
+    email: "david.w@email.com",
+    bloodGroup: "B-",
+    condition: "Thyroid Disorder",
+    initials: "DW",
+  },
+  P008: {
+    id: "P008",
+    name: "Lisa Anderson",
+    age: 29,
+    gender: "Female",
+    phone: "+1 (555) 890-1234",
+    email: "lisa.a@email.com",
+    bloodGroup: "AB+",
+    condition: "Anemia",
+    initials: "LA",
+  },
 };
 
 const treatmentHistory = [
@@ -66,7 +156,8 @@ const treatmentHistory = [
     doctor: "Dr. Sarah Smith",
     department: "Cardiology",
     treatment: "Blood pressure monitoring, lifestyle counseling",
-    notes: "Patient showing improvement. Continue current medication. BP reading: 130/85.",
+    notes:
+      "Patient showing improvement. Continue current medication. BP reading: 130/85.",
   },
   {
     id: 2,
@@ -75,7 +166,8 @@ const treatmentHistory = [
     doctor: "Dr. Sarah Smith",
     department: "General Medicine",
     treatment: "Comprehensive health checkup, chest X-ray, blood panel",
-    notes: "All vitals normal. Recommended diet modifications — reduce sodium intake.",
+    notes:
+      "All vitals normal. Recommended diet modifications — reduce sodium intake.",
   },
   {
     id: 3,
@@ -84,7 +176,8 @@ const treatmentHistory = [
     doctor: "Dr. John Wilson",
     department: "Cardiology",
     treatment: "Started on ACE inhibitors, dietary guidance",
-    notes: "New diagnosis. Patient educated on lifestyle changes. Follow-up in 6 weeks.",
+    notes:
+      "New diagnosis. Patient educated on lifestyle changes. Follow-up in 6 weeks.",
   },
 ];
 
@@ -235,10 +328,13 @@ export default function PatientHistoryPage() {
                 {patientInfo.initials}
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-1">{patientInfo.name}</h3>
+                <h3 className="text-xl font-semibold mb-1">
+                  {patientInfo.name}
+                </h3>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/80">
                   <span className="flex items-center gap-1.5">
-                    <Droplets className="w-3.5 h-3.5" /> {patientInfo.bloodGroup}
+                    <Droplets className="w-3.5 h-3.5" />{" "}
+                    {patientInfo.bloodGroup}
                   </span>
                   <span>•</span>
                   <span>{patientInfo.age} years old</span>
@@ -268,7 +364,6 @@ export default function PatientHistoryPage() {
 
         {/* Top 2-Column Grid: Treatment + Diagnostic */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
           {/* ── Treatment History ── */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
@@ -414,7 +509,15 @@ export default function PatientHistoryPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
-                  {["Medicine", "Dosage", "Frequency", "Start Date", "End Date", "Prescribed By", "Status"].map((h) => (
+                  {[
+                    "Medicine",
+                    "Dosage",
+                    "Frequency",
+                    "Start Date",
+                    "End Date",
+                    "Prescribed By",
+                    "Status",
+                  ].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
@@ -450,7 +553,9 @@ export default function PatientHistoryPage() {
                     </td>
                     <td className="px-5 py-4">
                       <Badge
-                        variant={med.status === "Active" ? "success" : "default"}
+                        variant={
+                          med.status === "Active" ? "success" : "default"
+                        }
                       >
                         {med.status}
                       </Badge>
@@ -514,7 +619,9 @@ export default function PatientHistoryPage() {
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                             {prescription.date}
                           </p>
-                          <p className="text-xs text-gray-400">{prescription.doctor}</p>
+                          <p className="text-xs text-gray-400">
+                            {prescription.doctor}
+                          </p>
                         </div>
                       </div>
 
