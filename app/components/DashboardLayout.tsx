@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { LogOut, X, Bell } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { DoctorProfileDrawer } from "./DoctorProfileDrawer";
+import { PatientProfileDrawer } from "./PatientProfileDrawer";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -55,7 +56,8 @@ export function DashboardLayout({
           {sidebarItems.map((item, index) => {
             // Use exact match for the root dashboard route.
             // For deeper routes (e.g. /patients, /prescriptions), also match sub-paths.
-            const isExactRoot = item.href.split("/").filter(Boolean).length <= 1;
+            const isExactRoot =
+              item.href.split("/").filter(Boolean).length <= 1;
             const isActive =
               pathname === item.href ||
               (!isExactRoot && pathname.startsWith(item.href + "/"));
@@ -63,11 +65,10 @@ export function DashboardLayout({
               <a
                 key={index}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                  isActive
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${isActive
                     ? "bg-[#eef8fb] text-[#0ab3b3]"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                }`}
+                  }`}
               >
                 <div
                   className={`${isActive ? "text-[#0ab3b3]" : "text-gray-400"}`}
@@ -104,7 +105,7 @@ export function DashboardLayout({
               <Bell className="w-5 h-5" />
               <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
             </button>
-            <button 
+            <button
               onClick={() => setIsProfileOpen(true)}
               className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-1.5 -mr-1.5 rounded-lg transition-colors cursor-pointer text-left"
             >
@@ -124,10 +125,17 @@ export function DashboardLayout({
         </main>
       </div>
 
-      <DoctorProfileDrawer
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
+      {userRole?.toLowerCase() === "patient" ? (
+        <PatientProfileDrawer
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      ) : (
+        <DoctorProfileDrawer
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
