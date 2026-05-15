@@ -5,7 +5,7 @@ const protectedRoutes: Record<string, string[]> = {
   "/doctor-dashboard": ["DOCTOR"],
   "/patient-dashboard": ["PATIENT"],
   "/pharmacy-dashboard": ["PHARMACY"],
-  "/diagnostic-dashboard": ["DIAGNOSTIC"],
+  "/diagnosis-dashboard": ["DIAGNOSTIC"],
 };
 
 //  Decode JWT
@@ -49,7 +49,7 @@ export function middleware(req: NextRequest) {
       const allowedRoles = protectedRoutes[route];
 
       //  Role not allowed
-      if (!allowedRoles.includes(userRole)) {
+      if (!allowedRoles.includes(userRole.toUpperCase())) {
         return NextResponse.redirect(new URL("/login", req.url));
       }
     }
@@ -64,6 +64,6 @@ export const config = {
     "/doctor-dashboard/:path*",
     "/patient-dashboard/:path*",
     "/pharmacy-dashboard/:path*",
-    "/diagnostic-dashboard/:path*",
+    "/diagnosis-dashboard/:path*",
   ],
 };

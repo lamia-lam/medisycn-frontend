@@ -35,10 +35,12 @@ export default function LoginPage() {
       router.replace("/doctor-dashboard");
     } else if (data.role === "PATIENT") {
       router.replace("/patient-dashboard");
-    } else if (data.role === "DIAGNOSTIC") {
-      router.replace("/diagnostic-dashboard");
-    } else {
+    } else if (data.role === "DIAGNOSTIC" || data.role === "diagnostic") {
+      router.replace("/diagnosis-dashboard");
+    } else if (data.role === "PHARMACY" || data.role === "pharmacy") {
       router.replace("/pharmacy-dashboard");
+    } else {
+      setError("Unknown role");
     }
   };
 
