@@ -15,6 +15,7 @@ import {
   Edit,
   Trash2,
   History,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -153,8 +154,62 @@ export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGender, setFilterGender] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [patients, setPatients] = useState(patientsData);
+  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
 
-  const filteredPatients = patientsData.filter((patient) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    phone: "",
+    condition: "",
+    lastVisit: "",
+    status: "Active" as Status,
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddPatient = () => {
+    if (!formData.name || !formData.age || !formData.gender || !formData.phone) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    const newPatient = {
+      id: `P${String(patients.length + 1).padStart(3, "0")}`,
+      name: formData.name,
+      age: parseInt(formData.age),
+      gender: formData.gender,
+      phone: formData.phone,
+      condition: formData.condition || "Not specified",
+      lastVisit: formData.lastVisit || new Date().toISOString().split("T")[0],
+      status: formData.status,
+      initials:
+        formData.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "XX",
+      avatarColor: "bg-cyan-100 text-cyan-700",
+    };
+
+    setPatients([...patients, newPatient]);
+    setIsAddPatientOpen(false);
+    setFormData({
+      name: "",
+      age: "",
+      gender: "",
+      phone: "",
+      condition: "",
+      lastVisit: "",
+      status: "Active",
+    });
+  };
+
+  const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       patient.phone.includes(searchQuery) ||
@@ -179,7 +234,10 @@ export default function PatientsPage() {
               Manage and monitor your patients
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+          <button
+            onClick={() => setIsAddPatientOpen(true)}
+            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+          >
             <Plus className="w-5 h-5" />
             Add Patient
           </button>
@@ -190,25 +248,25 @@ export default function PatientsPage() {
           {[
             {
               label: "Total Patients",
-              value: patientsData.length,
+              value: patients.length,
               color: "text-cyan-600",
               bg: "bg-cyan-50 dark:bg-cyan-900/20",
             },
             {
               label: "Active",
-              value: patientsData.filter((p) => p.status === "Active").length,
+              value: patients.filter((p) => p.status === "Active").length,
               color: "text-green-600",
               bg: "bg-green-50 dark:bg-green-900/20",
             },
             {
               label: "Critical",
-              value: patientsData.filter((p) => p.status === "Critical").length,
+              value: patients.filter((p) => p.status === "Critical").length,
               color: "text-red-600",
               bg: "bg-red-50 dark:bg-red-900/20",
             },
             {
               label: "Inactive",
-              value: patientsData.filter((p) => p.status === "Inactive").length,
+              value: patients.filter((p) => p.status === "Inactive").length,
               color: "text-gray-500",
               bg: "bg-gray-50 dark:bg-gray-800",
             },
@@ -273,7 +331,7 @@ export default function PatientsPage() {
               <span className="font-medium text-gray-600 dark:text-gray-300">
                 {filteredPatients.length}
               </span>{" "}
-              of {patientsData.length} patients
+              of {patients.length} patients
             </p>
           </div>
 
@@ -407,6 +465,152 @@ export default function PatientsPage() {
             </div>
           )}
         </div>
+
+        {/* Add Patient Modal */}
+        {isAddPatientOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    Add New Patient
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Fill in the patient information below to add them to your patient list.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddPatientOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Patient Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter full name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Age <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter age"
+                      value={formData.age}
+                      onChange={(e) => handleInputChange("age", e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Gender <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => handleInputChange("gender", e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Select gender
+                      </option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Contact Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Medical Condition
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter primary medical condition"
+                    value={formData.condition}
+                    onChange={(e) => handleInputChange("condition", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Last Visit Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.lastVisit}
+                      onChange={(e) => handleInputChange("lastVisit", e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Status <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) =>
+                        handleInputChange("status", e.target.value as Status)
+                      }
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                      <option value="Critical">Critical</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                <button
+                  onClick={() => setIsAddPatientOpen(false)}
+                  className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddPatient}
+                  className="px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-sm shadow-sm"
+                >
+                  Add Patient
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
