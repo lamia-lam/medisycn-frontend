@@ -27,11 +27,17 @@ export function DashboardLayout({
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const handleLogout = () => {
-    document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    } finally {
+      document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      router.replace("/login");
+    }
   };
 
   return (
@@ -65,10 +71,11 @@ export function DashboardLayout({
               <a
                 key={index}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${isActive
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                  isActive
                     ? "bg-[#eef8fb] text-[#0ab3b3]"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  }`}
+                }`}
               >
                 <div
                   className={`${isActive ? "text-[#0ab3b3]" : "text-gray-400"}`}

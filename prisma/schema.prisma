@@ -49,22 +49,20 @@ model Doctor {
 model Patient {
   id            Int      @id @default(autoincrement())
   userId        Int      @unique
-
   age           Int?
   gender        String?
   bloodGroup    String?
   condition     String?
   address       String?
   status        String   @default("Active")
-
   createdAt     DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
-
+  user          User             @relation(fields: [userId], references: [id])
   doctors       DoctorPatient[]
   prescriptions Prescription[]
   appointments  Appointment[]
   histories     MedicalHistory[]
+  reports       DiagnosticReport[]  // ← ADD
 }
 
 model DoctorPatient {
@@ -83,15 +81,14 @@ model DoctorPatient {
 
 model Appointment {
   id          Int      @id @default(autoincrement())
-
   doctorId    Int
   patientId   Int
-
   date        DateTime
   type        String?
   notes       String?
   status      String   @default("Pending")
-
+  rescheduleDate DateTime?   // ← ADD
+  rescheduleNote String?     // ← ADD
   createdAt   DateTime @default(now())
 
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
@@ -100,20 +97,31 @@ model Appointment {
 
 model Prescription {
   id            Int      @id @default(autoincrement())
-
   doctorId      Int
   patientId     Int
-
   diagnosis     String
   symptoms      String?
   medicines     Json
+  tests         Json?    // ← ADD (diagnostic tests the doctor orders)
   notes         String?
-
   createdAt     DateTime @default(now())
 
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
   patient Patient @relation(fields: [patientId], references: [id])
 }
+
+model DiagnosticReport {
+  id             Int      @id @default(autoincrement())
+  patientId      Int
+  prescriptionId Int?
+  testName       String
+  findings       String
+  reportUrl      String?
+  createdAt      DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+}
+
 
 model MedicalHistory {
   id          Int      @id @default(autoincrement())
