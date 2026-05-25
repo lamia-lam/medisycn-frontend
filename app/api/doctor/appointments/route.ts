@@ -8,8 +8,9 @@ function getUser(req: NextRequest) {
 }
 
 // ─────────────────────────────────────────────
-// GET /api/doctor/appointments?status=Pending
-// Doctor sees their appointments filtered by status
+// GET /api/doctor/appointments
+// Doctor sees all their appointments
+// Optional: ?status=Pending | Confirmed | Cancelled
 // ─────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const session = getUser(req);
@@ -24,7 +25,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
   }
 
-  // ?status=Pending or ?status=Confirmed etc — optional filter
   const status = req.nextUrl.searchParams.get("status");
 
   const appointments = await prisma.appointment.findMany({
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         },
       },
     },
-    orderBy: { date: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 
   const result = appointments.map((a) => ({
@@ -48,8 +48,6 @@ export async function GET(req: NextRequest) {
     type: a.type,
     notes: a.notes,
     status: a.status,
-    rescheduleDate: a.rescheduleDate,
-    rescheduleNote: a.rescheduleNote,
     patientId: a.patient.id,
     patientName: a.patient.user.name,
     patientPhone: a.patient.user.phone,
@@ -63,9 +61,8 @@ export async function GET(req: NextRequest) {
 
 // ─────────────────────────────────────────────
 // PATCH /api/doctor/appointments
-// Doctor accepts, cancels or reschedules
-// body: { appointmentId, action, rescheduleDate?, rescheduleNote? }
-// action = "accept" | "cancel" | "reschedule"
+// Doctor confirms or cancels an appointment
+// body: { appointmentId, action: "accept" | "cancel" }
 // ─────────────────────────────────────────────
 export async function PATCH(req: NextRequest) {
   const session = getUser(req);
@@ -80,8 +77,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
   }
 
-  const { appointmentId, action, rescheduleDate, rescheduleNote } =
-    await req.json();
+  const { appointmentId, action } = await req.json();
 
   if (!appointmentId || !action) {
     return NextResponse.json(
@@ -90,52 +86,35 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  // make sure this appointment actually belongs to this doctor
-  // prevents a doctor from modifying another doctor's appointments
+  if (!["accept", "cancel"].includes(action)) {
+    return NextResponse.json(
+      { error: "action must be: accept | cancel" },
+      { status: 400 },
+    );
+  }
+
+  // Ensure this appointment belongs to this doctor
   const appointment = await prisma.appointment.findFirst({
     where: { id: appointmentId, doctorId: doctor.id },
   });
 
   if (!appointment) {
-    return NextResponse.json(
-      { error: "Appointment not found" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
   }
 
-  // map the plain action word to a status string
-  const statusMap: Record<string, string> = {
-    accept: "Confirmed",
-    cancel: "Cancelled",
-    reschedule: "Rescheduled",
-  };
-
-  const newStatus = statusMap[action];
-  if (!newStatus) {
+  // Only Pending appointments can be acted on
+  if (appointment.status !== "Pending") {
     return NextResponse.json(
-      { error: "action must be: accept | cancel | reschedule" },
+      { error: "Only pending appointments can be confirmed or cancelled" },
       { status: 400 },
     );
   }
 
-  // reschedule needs a new date
-  if (action === "reschedule" && !rescheduleDate) {
-    return NextResponse.json(
-      { error: "rescheduleDate is required when action is reschedule" },
-      { status: 400 },
-    );
-  }
+  const newStatus = action === "accept" ? "Confirmed" : "Cancelled";
 
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
-    data: {
-      status: newStatus,
-      // only set these fields when rescheduling
-      ...(action === "reschedule" && {
-        rescheduleDate: new Date(rescheduleDate),
-        rescheduleNote: rescheduleNote ?? null,
-      }),
-    },
+    data: { status: newStatus },
   });
 
   return NextResponse.json(updated);

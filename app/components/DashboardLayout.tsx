@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { LogOut, X, Bell } from "lucide-react";
+import { LogOut, X, Bell, Menu } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { DoctorProfileDrawer } from "./DoctorProfileDrawer";
 import { PatientProfileDrawer } from "./PatientProfileDrawer";
@@ -26,6 +26,7 @@ export function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -43,25 +44,37 @@ export function DashboardLayout({
   return (
     <div className="flex h-screen bg-[#f8fafc] dark:bg-gray-900 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col shrink-0 shadow-sm z-10">
-        <div className="p-4 flex items-center justify-between border-b border-transparent">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-cyan-600 text-white flex items-center justify-center font-bold text-sm">
+      <aside
+        className={`${
+          sidebarCollapsed ? "w-14" : "w-64"
+        } bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col shrink-0 shadow-sm z-10 transition-all duration-300 ease-in-out overflow-hidden`}
+      >
+        {/* Logo + Toggle */}
+        <div className="p-4 flex items-center justify-between border-b border-transparent shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded bg-cyan-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
               MS
             </div>
-            <span className="font-semibold text-gray-800 dark:text-white">
-              MediSync
-            </span>
+            {!sidebarCollapsed && (
+              <span className="font-semibold text-gray-800 dark:text-white whitespace-nowrap">
+                MediSync
+              </span>
+            )}
           </div>
-          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-            <X className="w-5 h-5" />
-          </button>
+          {!sidebarCollapsed && (
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0 ml-2"
+              title="Collapse sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
-        <nav className="flex-1 px-3 space-y-1 mt-6 overflow-y-auto">
+        {/* Nav items */}
+        <nav className="flex-1 px-2 space-y-1 mt-6 overflow-y-auto overflow-x-hidden">
           {sidebarItems.map((item, index) => {
-            // Use exact match for the root dashboard route.
-            // For deeper routes (e.g. /patients, /prescriptions), also match sub-paths.
             const isExactRoot =
               item.href.split("/").filter(Boolean).length <= 1;
             const isActive =
@@ -71,41 +84,64 @@ export function DashboardLayout({
               <a
                 key={index}
                 href={item.href}
+                title={sidebarCollapsed ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                  sidebarCollapsed ? "justify-center" : ""
+                } ${
                   isActive
                     ? "bg-[#eef8fb] text-[#0ab3b3]"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 }`}
               >
                 <div
-                  className={`${isActive ? "text-[#0ab3b3]" : "text-gray-400"}`}
+                  className={`shrink-0 ${isActive ? "text-[#0ab3b3]" : "text-gray-400"}`}
                 >
                   {item.icon}
                 </div>
-                {item.label}
+                {!sidebarCollapsed && (
+                  <span className="whitespace-nowrap">{item.label}</span>
+                )}
               </a>
             );
           })}
         </nav>
 
-        <div className="p-4 mt-auto">
+        {/* Logout */}
+        <div className="p-3 mt-auto shrink-0">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            title={sidebarCollapsed ? "Logout" : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+              sidebarCollapsed ? "justify-center" : ""
+            }`}
           >
-            <LogOut className="w-5 h-5 text-gray-500" />
-            <span>Logout</span>
+            <LogOut className="w-5 h-5 text-gray-500 shrink-0" />
+            {!sidebarCollapsed && (
+              <span className="whitespace-nowrap">Logout</span>
+            )}
           </button>
         </div>
       </aside>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top Header */}
-        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between px-8 shrink-0 shadow-sm z-0">
-          <h1 className="text-[1.35rem] font-semibold text-gray-800 dark:text-white">
-            {userRole} Dashboard
-          </h1>
+        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 shadow-sm z-0">
+          <div className="flex items-center gap-4">
+            {/* Hamburger — only visible when sidebar is collapsed */}
+            {sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                title="Expand sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+            <h1 className="text-[1.35rem] font-semibold text-gray-800 dark:text-white">
+              {userRole} Dashboard
+            </h1>
+          </div>
 
           <div className="flex items-center gap-6">
             <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 relative">
@@ -117,7 +153,7 @@ export function DashboardLayout({
               className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-1.5 -mr-1.5 rounded-lg transition-colors cursor-pointer text-left"
             >
               <div className="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-medium text-sm">
-                D
+                {userRole?.charAt(0).toUpperCase() ?? "U"}
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {userRole}

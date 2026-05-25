@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../../components/DashboardLayout";
 import {
   Activity,
@@ -42,27 +41,23 @@ const sidebarItems = [
   },
 ];
 
-const departments = [
-  "Internal Medicine",
-  "Cardiology",
-  "Orthopedics",
-  "Dermatology",
-  "Pediatrics",
-  "Gynecology",
-  "Neurology",
-  "Ophthalmology",
-];
+// ── Types ────────────────────────────────────────────────
+interface Doctor {
+  id: number;
+  specialization: string | null;
+  department: string | null;
+  designation: string | null;
+  user: { name: string };
+}
 
-const doctors: Record<string, string[]> = {
-  "Internal Medicine": ["Dr. Sarah Smith", "Dr. John Wilson"],
-  Cardiology: ["Dr. Michael Brown", "Dr. Emily Davis"],
-  Orthopedics: ["Dr. Robert Johnson", "Dr. Lisa Anderson"],
-  Dermatology: ["Dr. David Lee", "Dr. Maria Garcia"],
-  Pediatrics: ["Dr. James Taylor", "Dr. Jennifer Martinez"],
-  Gynecology: ["Dr. Patricia Rodriguez", "Dr. Linda Hernandez"],
-  Neurology: ["Dr. Christopher Lopez", "Dr. Barbara Wilson"],
-  Ophthalmology: ["Dr. Daniel Moore", "Dr. Nancy Clark"],
-};
+interface PatientInfo {
+  name: string;
+  phone: string;
+  age: number;
+  gender: string;
+  bloodGroup: string;
+  patientId: string;
+}
 
 const timeSlots = [
   "09:00 AM",
@@ -87,33 +82,115 @@ const serviceTypes = [
   "Emergency Visit",
 ];
 
-const patientInfo = {
-  name: "John Doe",
-  phone: "+1 (555) 123-4567",
-  age: 34,
-  gender: "Male",
-  bloodGroup: "B+",
-  patientId: "#P0042",
-};
+// converts "09:00 AM" → "09:00" for datetime combining
+function convertTo24Hour(time: string): string {
+  const [timePart, modifier] = time.split(" ");
+  let [hours, minutes] = timePart.split(":").map(Number);
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
 
 export default function BookAppointment() {
   const router = useRouter();
+
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [patientInfo, setPatientInfo] = useState<PatientInfo>({
+    name: "",
+    phone: "",
+    age: 0,
+    gender: "",
+    bloodGroup: "",
+    patientId: "",
+  });
   const [formData, setFormData] = useState({
     department: "",
-    doctor: "",
+    doctorId: "",
     date: "",
     time: "",
     serviceType: "",
     notes: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
+  // ── load patient info + doctors on mount ─────────────────
+  useEffect(() => {
+    // get logged-in patient's info
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.patient) {
+          setPatientInfo({
+            name: data.name ?? "",
+            phone: data.phone ?? "",
+            age: data.patient.age ?? 0,
+            gender: data.patient.gender ?? "",
+            bloodGroup: data.patient.bloodGroup ?? "",
+            patientId: `#P${String(data.patient.id).padStart(4, "0")}`,
+          });
+        }
+      })
+      .catch(() => {});
+
+    // get all available doctors
+    fetch("/api/doctor/list")
+      .then((r) => r.json())
+      .then((data) => {
+        setDoctors(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setDoctors([]));
+  }, []);
+
+  // ── departments from real doctors ────────────────────────
+  const departments = [
+    ...new Set(doctors.map((d) => d.department).filter(Boolean) as string[]),
+  ];
+
+  // ── doctors filtered by selected department ──────────────
   const availableDoctors = formData.department
-    ? doctors[formData.department] || []
+    ? doctors.filter((d) => d.department === formData.department)
     : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ── form submit → calls real API ─────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (!formData.time) {
+      setError("Please select a time slot.");
+      return;
+    }
+    if (!formData.doctorId) {
+      setError("Please select a doctor.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    // combine date + time into one ISO datetime string
+    const dateTime = `${formData.date}T${convertTo24Hour(formData.time)}:00`;
+
+    const res = await fetch("/api/patient/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctorId: formData.doctorId,
+        date: dateTime,
+        type: formData.serviceType,
+        notes: formData.notes,
+      }),
+    });
+
+    const data = await res.json();
+    setSubmitting(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+
     setSubmitted(true);
     setTimeout(() => {
       router.push("/patient-dashboard/appointments");
@@ -122,6 +199,12 @@ export default function BookAppointment() {
 
   const today = new Date().toISOString().split("T")[0];
 
+  // ── selected doctor name for success message ─────────────
+  const selectedDoctor = doctors.find(
+    (d) => String(d.id) === String(formData.doctorId),
+  );
+
+  // ── Success screen ───────────────────────────────────────
   if (submitted) {
     return (
       <DashboardLayout sidebarItems={sidebarItems} userRole="Patient">
@@ -131,12 +214,12 @@ export default function BookAppointment() {
           </div>
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
-              Appointment Booked!
+              Appointment Requested!
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               Your appointment with{" "}
               <span className="font-medium text-gray-700 dark:text-gray-200">
-                {formData.doctor}
+                {selectedDoctor?.user.name ?? "the doctor"}
               </span>{" "}
               on{" "}
               <span className="font-medium text-gray-700 dark:text-gray-200">
@@ -146,7 +229,7 @@ export default function BookAppointment() {
               <span className="font-medium text-gray-700 dark:text-gray-200">
                 {formData.time}
               </span>{" "}
-              has been scheduled.
+              has been submitted. Waiting for doctor confirmation.
             </p>
             <p className="text-gray-400 text-xs mt-2">
               Redirecting to appointments…
@@ -157,6 +240,7 @@ export default function BookAppointment() {
     );
   }
 
+  // ── Main form ────────────────────────────────────────────
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Patient">
       <div className="space-y-6">
@@ -179,17 +263,21 @@ export default function BookAppointment() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Patient Info Banner */}
+          {/* Patient Info Banner — real data from API */}
           <div className="bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
             <p className="text-xs font-semibold uppercase tracking-widest text-cyan-100 mb-4">
               Patient Information
             </p>
             <div className="flex items-center gap-5 mb-4">
               <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center font-bold text-xl shrink-0">
-                JD
+                {patientInfo.name
+                  ? patientInfo.name.charAt(0).toUpperCase()
+                  : "?"}
               </div>
               <div>
-                <h3 className="text-lg font-semibold">{patientInfo.name}</h3>
+                <h3 className="text-lg font-semibold">
+                  {patientInfo.name || "Loading..."}
+                </h3>
                 <p className="text-cyan-100 text-sm">{patientInfo.patientId}</p>
               </div>
             </div>
@@ -198,25 +286,27 @@ export default function BookAppointment() {
                 <p className="text-xs text-cyan-200 mb-1">Phone</p>
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <Phone className="w-3.5 h-3.5 shrink-0" />
-                  {patientInfo.phone}
+                  {patientInfo.phone || "—"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-cyan-200 mb-1">Age</p>
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <User className="w-3.5 h-3.5 shrink-0" />
-                  {patientInfo.age} years
+                  {patientInfo.age ? `${patientInfo.age} years` : "—"}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-cyan-200 mb-1">Gender</p>
-                <p className="text-sm font-medium">{patientInfo.gender}</p>
+                <p className="text-sm font-medium">
+                  {patientInfo.gender || "—"}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-cyan-200 mb-1">Blood Group</p>
                 <p className="flex items-center gap-1.5 text-sm font-medium">
                   <Droplet className="w-3.5 h-3.5 shrink-0" />
-                  {patientInfo.bloodGroup}
+                  {patientInfo.bloodGroup || "—"}
                 </p>
               </div>
             </div>
@@ -229,7 +319,7 @@ export default function BookAppointment() {
             </h3>
 
             <div className="space-y-5">
-              {/* Department */}
+              {/* Department — built from real doctor data */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   <Building2 className="w-4 h-4 inline mr-1.5 text-gray-400" />
@@ -241,7 +331,7 @@ export default function BookAppointment() {
                     setFormData({
                       ...formData,
                       department: e.target.value,
-                      doctor: "",
+                      doctorId: "", // reset doctor when dept changes
                     })
                   }
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent appearance-none cursor-pointer"
@@ -256,16 +346,16 @@ export default function BookAppointment() {
                 </select>
               </div>
 
-              {/* Doctor */}
+              {/* Doctor — filtered by department */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   <Stethoscope className="w-4 h-4 inline mr-1.5 text-gray-400" />
                   Doctor
                 </label>
                 <select
-                  value={formData.doctor}
+                  value={formData.doctorId}
                   onChange={(e) =>
-                    setFormData({ ...formData, doctor: e.target.value })
+                    setFormData({ ...formData, doctorId: e.target.value })
                   }
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!formData.department}
@@ -277,8 +367,9 @@ export default function BookAppointment() {
                       : "Select a department first"}
                   </option>
                   {availableDoctors.map((doc) => (
-                    <option key={doc} value={doc}>
-                      {doc}
+                    <option key={doc.id} value={doc.id}>
+                      {doc.user.name}
+                      {doc.designation ? ` - ${doc.designation}` : ""}
                     </option>
                   ))}
                 </select>
@@ -354,7 +445,7 @@ export default function BookAppointment() {
                 </div>
               </div>
 
-              {/* Notes (optional) */}
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Notes{" "}
@@ -370,6 +461,13 @@ export default function BookAppointment() {
                   className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none placeholder-gray-400"
                 />
               </div>
+
+              {/* Error message */}
+              {error && (
+                <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-4 py-2.5 rounded-lg">
+                  {error}
+                </p>
+              )}
             </div>
           </div>
 
@@ -384,10 +482,10 @@ export default function BookAppointment() {
             </button>
             <button
               type="submit"
-              disabled={!formData.time}
+              disabled={!formData.time || submitting}
               className="px-8 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
             >
-              Confirm Appointment
+              {submitting ? "Submitting..." : "Confirm Appointment"}
             </button>
           </div>
         </form>

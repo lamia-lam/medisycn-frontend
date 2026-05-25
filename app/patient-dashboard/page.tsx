@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 import {
   Calendar,
   FileText,
@@ -10,6 +12,8 @@ import {
   Pill,
   HeartPulse,
   User,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "../components/DashboardLayout";
@@ -94,6 +98,23 @@ const recentPrescriptions = [
 
 export default function PatientDashboard() {
   const router = useRouter();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/patient/profile")
+      .then((res) => res.json())
+      .then((data) => setProfile(data))
+      .catch(console.error);
+  }, []);
+
+  const patientName = profile?.user?.name || "Loading...";
+  const firstName = patientName.split(" ")[0];
+  const initials = patientName
+    .split(" ")
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <DashboardLayout sidebarItems={patientSidebarItems} userRole="Patient">
@@ -102,7 +123,7 @@ export default function PatientDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-[1.75rem] font-medium text-gray-800 dark:text-white mb-1">
-              Welcome back, John! 👋
+              Welcome back, {firstName}! 👋
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
               Here's a summary of your health overview
@@ -150,25 +171,43 @@ export default function PatientDashboard() {
         </div>
 
         {/* Patient Info Card */}
-        <div className="bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-cyan-700 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center font-bold text-2xl shrink-0">
-              JD
+              {profile ? initials : "?"}
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold mb-1">John Doe</h3>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-cyan-100">
+              <h3 className="text-xl font-semibold mb-1">{patientName}</h3>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-cyan-100">
+                {profile?.user?.email && (
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" /> {profile.user.email}
+                  </span>
+                )}
+                {profile?.user?.phone && (
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" /> {profile.user.phone}
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Male, 34 years
+                  <User className="w-3.5 h-3.5" />{" "}
+                  {profile?.gender || "Unknown"}{" "}
+                  {profile?.age ? `, ${profile.age} years` : ""}
                 </span>
-                <span>Blood Group: B+</span>
-                <span>Condition: Hypertension</span>
-                <span>Patient ID: #P0042</span>
+                {profile?.bloodGroup && (
+                  <span>Blood Group: {profile.bloodGroup}</span>
+                )}
+                {profile?.condition && (
+                  <span>Condition: {profile.condition}</span>
+                )}
+                <span>
+                  Patient ID: #P{String(profile?.id || 0).padStart(4, "0")}
+                </span>
               </div>
             </div>
             <button
               onClick={() => router.push("/patient-dashboard/records")}
-              className="hidden md:inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="hidden md:inline-flex items-center gap-2 bg-cyan-600 border border-white-200 shadow-lg hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               View Records <ChevronRight className="w-4 h-4" />
             </button>

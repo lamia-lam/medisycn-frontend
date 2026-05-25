@@ -44,9 +44,7 @@ export async function GET(req: NextRequest) {
     date: a.date,
     type: a.type,
     notes: a.notes,
-    status: a.status, // Pending / Confirmed / Cancelled / Rescheduled
-    rescheduleDate: a.rescheduleDate, // only set if doctor rescheduled
-    rescheduleNote: a.rescheduleNote, // doctor's reason for rescheduling
+    status: a.status, // Pending / Confirmed / Cancelled
     doctorName: a.doctor.user.name,
     doctorSpecialization: a.doctor.specialization,
     createdAt: a.createdAt,
@@ -95,4 +93,70 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(appointment, { status: 201 });
+}
+
+// ─────────────────────────────────────────────
+// PATCH /api/patient/appointments
+// Patient can only cancel their own pending appointment
+// body: { appointmentId, action: "cancel" }
+// ─────────────────────────────────────────────
+export async function PATCH(req: NextRequest) {
+  const session = getUser(req);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { appointmentId, action } = await req.json();
+
+  if (action !== "cancel") {
+    return NextResponse.json(
+      { error: "Patients can only cancel appointments" },
+      { status: 400 },
+    );
+  }
+
+  if (!appointmentId) {
+    return NextResponse.json(
+      { error: "appointmentId is required" },
+      { status: 400 },
+    );
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { userId: session.userId },
+  });
+  if (!patient) {
+    return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+  }
+
+  // make sure this appointment actually belongs to this patient
+  // prevents one patient from cancelling another patient's appointment
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      patientId: patient.id,
+    },
+  });
+
+  if (!appointment) {
+    return NextResponse.json(
+      { error: "Appointment not found" },
+      { status: 404 },
+    );
+  }
+
+  // only Pending appointments can be cancelled
+  if (appointment.status !== "Pending") {
+    return NextResponse.json(
+      { error: "Only pending appointments can be cancelled" },
+      { status: 400 },
+    );
+  }
+
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: "Cancelled" },
+  });
+
+  return NextResponse.json(updated);
 }

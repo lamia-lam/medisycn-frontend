@@ -109,7 +109,7 @@ export function DoctorProfileDrawer({
         onClick={onClose}
       ></div>
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl z-[70] overflow-y-auto flex flex-col transition-transform transform translate-x-0">
-        <div className="sticky top-0 bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6 border-b border-gray-200 dark:border-gray-700 z-10 shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-cyan-700 to-cyan-500 text-white p-6 border-b border-gray-200 dark:border-gray-700 z-10 shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Doctor Profile</h2>
             <button

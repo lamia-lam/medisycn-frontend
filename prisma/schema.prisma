@@ -87,8 +87,6 @@ model Appointment {
   type        String?
   notes       String?
   status      String   @default("Pending")
-  rescheduleDate DateTime?   // ← ADD
-  rescheduleNote String?     // ← ADD
   createdAt   DateTime @default(now())
 
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
