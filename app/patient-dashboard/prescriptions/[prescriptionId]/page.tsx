@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../../components/DashboardLayout";
 import {
   Activity,
@@ -14,377 +14,17 @@ import {
   HeartPulse,
   CheckCircle2,
   AlertCircle,
+  Microscope,
+  Loader2
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 const sidebarItems = [
-  {
-    icon: <Activity className="w-5 h-5" />,
-    label: "Dashboard",
-    href: "/patient-dashboard",
-  },
-  {
-    icon: <Calendar className="w-5 h-5" />,
-    label: "Appointments",
-    href: "/patient-dashboard/appointments",
-  },
-  {
-    icon: <HeartPulse className="w-5 h-5" />,
-    label: "Medical Records",
-    href: "/patient-dashboard/records",
-  },
-  {
-    icon: <Pill className="w-5 h-5" />,
-    label: "Prescriptions",
-    href: "/patient-dashboard/prescriptions",
-  },
+  { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/patient-dashboard" },
+  { icon: <Calendar className="w-5 h-5" />, label: "Appointments", href: "/patient-dashboard/appointments" },
+  { icon: <HeartPulse className="w-5 h-5" />, label: "Medical Records", href: "/patient-dashboard/records" },
+  { icon: <Pill className="w-5 h-5" />, label: "Prescriptions", href: "/patient-dashboard/prescriptions" },
 ];
-
-type Medicine = {
-  name: string;
-  strength: string;
-  dosage: string;
-  frequency: string;
-  timing: string;
-  duration: string;
-  instructions: string;
-};
-
-type PrescriptionRecord = {
-  id: string;
-  date: string;
-  patient: {
-    name: string;
-    id: string;
-    age: number;
-    gender: string;
-    phone: string;
-    address: string;
-  };
-  doctor: {
-    name: string;
-    specialization: string;
-    license: string;
-    phone: string;
-  };
-  hospital: {
-    name: string;
-    address: string;
-    phone: string;
-    website: string;
-  };
-  diagnosis: string;
-  symptoms: string;
-  medicines: Medicine[];
-  notes: string;
-  followUp: string;
-};
-
-const prescriptionRecords: Record<string, PrescriptionRecord> = {
-  "RX-2345": {
-    id: "RX-2345",
-    date: "2026-04-25",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. Sarah Smith",
-      specialization: "Internal Medicine",
-      license: "MD-12345",
-      phone: "+1 (555) 987-6543",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Essential Hypertension",
-    symptoms: "Elevated blood pressure (150/95 mmHg), occasional headaches, fatigue, dizziness upon standing",
-    medicines: [
-      {
-        name: "Lisinopril",
-        strength: "10mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Morning",
-        duration: "30 days",
-        instructions: "Take on an empty stomach. Avoid potassium supplements.",
-      },
-      {
-        name: "Aspirin",
-        strength: "81mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Night",
-        duration: "30 days",
-        instructions: "Take after dinner. Do not take on empty stomach.",
-      },
-      {
-        name: "Amlodipine",
-        strength: "5mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Evening",
-        duration: "30 days",
-        instructions: "Can be taken with or without food.",
-      },
-    ],
-    notes:
-      "Monitor blood pressure daily and maintain a log. Follow low-sodium diet. Regular exercise (30 min walk) recommended. Avoid alcohol and smoking. Report any swelling of ankles or persistent dizziness.",
-    followUp: "2026-05-09",
-  },
-  "RX-2310": {
-    id: "RX-2310",
-    date: "2026-03-15",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. Michael Brown",
-      specialization: "Cardiology",
-      license: "MD-67890",
-      phone: "+1 (555) 555-7890",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Atrial Fibrillation",
-    symptoms: "Irregular heartbeat, palpitations, shortness of breath on exertion, occasional chest discomfort",
-    medicines: [
-      {
-        name: "Warfarin",
-        strength: "5mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Evening",
-        duration: "90 days",
-        instructions: "Take at the same time each day. Regular INR monitoring required.",
-      },
-      {
-        name: "Metoprolol",
-        strength: "25mg",
-        dosage: "1 tablet",
-        frequency: "Twice daily",
-        timing: "Morning & Evening",
-        duration: "90 days",
-        instructions: "Take with food. Do not stop abruptly.",
-      },
-    ],
-    notes:
-      "Maintain consistent vitamin K intake. Avoid NSAIDs and aspirin unless directed. Report any unusual bruising or bleeding. Wear a medical alert bracelet.",
-    followUp: "2026-04-15",
-  },
-  "RX-2278": {
-    id: "RX-2278",
-    date: "2026-02-28",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. Emily Davis",
-      specialization: "General Medicine",
-      license: "MD-11223",
-      phone: "+1 (555) 444-5566",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Type 2 Diabetes Mellitus",
-    symptoms: "Increased thirst, frequent urination, fatigue, blurred vision, HbA1c 7.8%",
-    medicines: [
-      {
-        name: "Metformin",
-        strength: "500mg",
-        dosage: "1 tablet",
-        frequency: "Twice daily",
-        timing: "Morning & Evening",
-        duration: "60 days",
-        instructions: "Take with meals to reduce GI upset.",
-      },
-      {
-        name: "Glipizide",
-        strength: "5mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Morning (30 min before breakfast)",
-        duration: "60 days",
-        instructions: "Take 30 minutes before breakfast. Watch for signs of hypoglycemia.",
-      },
-    ],
-    notes:
-      "Monitor fasting blood sugar daily. Follow diabetic diet plan. Exercise 30 min daily. Keep glucose tablets on hand for hypoglycemia. HbA1c retest in 3 months.",
-    followUp: "2026-04-28",
-  },
-  "RX-2245": {
-    id: "RX-2245",
-    date: "2026-02-10",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. Robert Johnson",
-      specialization: "Orthopedics",
-      license: "MD-33445",
-      phone: "+1 (555) 666-7788",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Osteoarthritis – Right Knee",
-    symptoms: "Knee pain worsening with activity, morning stiffness lasting 20-30 minutes, swelling, reduced range of motion",
-    medicines: [
-      {
-        name: "Diclofenac",
-        strength: "50mg",
-        dosage: "1 tablet",
-        frequency: "Twice daily",
-        timing: "Morning & Evening",
-        duration: "14 days",
-        instructions: "Take with food. Do not exceed 14 days without review.",
-      },
-      {
-        name: "Calcium + Vitamin D3",
-        strength: "500mg/250IU",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "After lunch",
-        duration: "90 days",
-        instructions: "Take after a meal for better absorption.",
-      },
-    ],
-    notes:
-      "Apply ice pack for 15 min twice daily. Gentle range-of-motion exercises recommended. Avoid high-impact activities. Physiotherapy referral provided. X-ray follow-up in 6 weeks.",
-    followUp: "2026-03-24",
-  },
-  "RX-2198": {
-    id: "RX-2198",
-    date: "2026-01-15",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. Sarah Smith",
-      specialization: "Internal Medicine",
-      license: "MD-12345",
-      phone: "+1 (555) 987-6543",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Iron-Deficiency Anemia",
-    symptoms: "Fatigue, pallor, shortness of breath on exertion, brittle nails, Hemoglobin 9.8 g/dL",
-    medicines: [
-      {
-        name: "Ferrous Sulfate",
-        strength: "325mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Morning (empty stomach)",
-        duration: "90 days",
-        instructions: "Take on empty stomach with vitamin C (orange juice). Avoid tea/coffee for 2 hours.",
-      },
-      {
-        name: "Folic Acid",
-        strength: "5mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Morning",
-        duration: "90 days",
-        instructions: "Can be taken with or without food.",
-      },
-    ],
-    notes:
-      "Include iron-rich foods (spinach, lentils, red meat) in diet. Repeat CBC in 6 weeks to monitor hemoglobin levels. Stool may appear dark — this is normal with iron supplementation.",
-    followUp: "2026-02-26",
-  },
-  "RX-2156": {
-    id: "RX-2156",
-    date: "2025-12-20",
-    patient: {
-      name: "John Doe",
-      id: "P0042",
-      age: 34,
-      gender: "Male",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main Street, Springfield, IL 62701",
-    },
-    doctor: {
-      name: "Dr. David Lee",
-      specialization: "Dermatology",
-      license: "MD-55667",
-      phone: "+1 (555) 888-9900",
-    },
-    hospital: {
-      name: "MediSync Health Center",
-      address: "456 Healthcare Ave, Springfield, IL 62702",
-      phone: "+1 (555) 111-2222",
-      website: "www.medisync.health",
-    },
-    diagnosis: "Chronic Urticaria",
-    symptoms: "Recurring hives for 6+ weeks, intense itching, wheals on trunk and limbs, worsening in evening",
-    medicines: [
-      {
-        name: "Cetirizine",
-        strength: "10mg",
-        dosage: "1 tablet",
-        frequency: "Once daily",
-        timing: "Night",
-        duration: "30 days",
-        instructions: "Take at bedtime. May cause drowsiness.",
-      },
-      {
-        name: "Hydroxyzine",
-        strength: "25mg",
-        dosage: "1 tablet",
-        frequency: "As needed",
-        timing: "For acute flare-ups",
-        duration: "30 days",
-        instructions: "Take during severe episodes. Do not drive after taking. Maximum 3 tablets per day.",
-      },
-    ],
-    notes:
-      "Avoid known triggers (hot showers, tight clothing, stress). Keep a symptom diary. Calamine lotion may be applied for local relief. If symptoms persist or worsen, allergy testing will be scheduled.",
-    followUp: "2026-01-20",
-  },
-};
 
 export default function PatientPrescriptionViewer() {
   const router = useRouter();
@@ -392,9 +32,73 @@ export default function PatientPrescriptionViewer() {
   const [zoom, setZoom] = useState(100);
 
   const prescriptionId = params.prescriptionId as string;
-  const rx = prescriptionRecords[prescriptionId];
+  
+  const [rx, setRx] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  if (!rx) {
+  useEffect(() => {
+    if (!prescriptionId) return;
+
+    async function fetchPrescription() {
+      try {
+        const res = await fetch(`/api/patient/prescription/${prescriptionId}`);
+        if (!res.ok) throw new Error("Failed to load prescription details");
+        const data = await res.json();
+        
+        // Transform for UI
+        setRx({
+          id: `RX-${data.id}`,
+          date: new Date(data.createdAt).toISOString().split('T')[0],
+          patient: {
+            name: data.patient.name,
+            id: `P${data.patient.id.toString().padStart(3, '0')}`,
+            age: data.patient.age || "-",
+            gender: data.patient.gender || "-",
+            phone: data.patient.phone || "-",
+            address: data.patient.address || "-",
+          },
+          doctor: {
+            name: data.doctor.name,
+            specialization: data.doctor.specialization || "Doctor",
+            license: data.doctor.license || "-",
+            phone: data.doctor.phone || "-",
+          },
+          hospital: {
+            name: "MediSync Health Center",
+            address: "456 Healthcare Ave, Springfield, IL 62702",
+            phone: "+1 (555) 111-2222",
+            website: "www.medisync.health",
+          },
+          diagnosis: data.diagnosis,
+          symptoms: data.symptoms || "None reported",
+          medicines: data.medicines || [],
+          tests: data.tests || [],
+          notes: data.notes || "No additional notes.",
+          followUp: "As needed", 
+        });
+      } catch (err: any) {
+        setError(err.message || "Failed to load prescription");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchPrescription();
+  }, [prescriptionId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Patient">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+          <p className="text-gray-500 dark:text-gray-400">Loading prescription details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !rx) {
     return (
       <DashboardLayout sidebarItems={sidebarItems} userRole="Patient">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
@@ -405,7 +109,7 @@ export default function PatientPrescriptionViewer() {
             Prescription not found
           </p>
           <p className="text-sm text-gray-400">
-            The prescription "{prescriptionId}" could not be located.
+            {error || `The prescription "${prescriptionId}" could not be located.`}
           </p>
           <button
             onClick={() => router.push("/patient-dashboard/prescriptions")}
@@ -574,7 +278,7 @@ export default function PatientPrescriptionViewer() {
                     Prescribed Medications
                   </p>
                   <div className="space-y-4">
-                    {rx.medicines.map((medicine, index) => (
+                    {rx.medicines.map((medicine: any, index: number) => (
                       <div
                         key={index}
                         className="border border-gray-200 rounded-xl overflow-hidden"
@@ -607,6 +311,55 @@ export default function PatientPrescriptionViewer() {
                     ))}
                   </div>
                 </div>
+
+                {/* Diagnostic Tests */}
+                {rx.tests && rx.tests.length > 0 && (
+                  <div className="border-t border-gray-100 pt-6 mb-7">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Microscope className="w-4 h-4 text-orange-500" />
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        Diagnostic Tests Ordered
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {rx.tests.map((test: any, index: number) => (
+                        <div
+                          key={index}
+                          className="border border-orange-200 rounded-xl overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between px-5 py-3 bg-orange-50">
+                            <div>
+                              <p className="font-semibold text-gray-800 text-sm">
+                                {index + 1}.&nbsp;{test.name}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">{test.type}</p>
+                            </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                test.urgency === "STAT (Immediate)"
+                                  ? "bg-red-100 text-red-700"
+                                  : test.urgency === "Urgent"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {test.urgency}
+                            </span>
+                          </div>
+                          {test.instructions && (
+                            <div className="px-5 py-3 border-t border-orange-100 flex items-start gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium text-gray-700">Instructions: </span>
+                                {test.instructions}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Additional Notes */}
                 <div className="border-t border-gray-100 pt-6 mb-7">

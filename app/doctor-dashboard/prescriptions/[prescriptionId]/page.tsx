@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../../components/DashboardLayout";
 import {
   Activity,
@@ -11,88 +12,107 @@ import {
   Printer,
   Send,
   CheckCircle2,
+  Microscope,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 const sidebarItems = [
-  {
-    icon: <Activity className="w-5 h-5" />,
-    label: "Dashboard",
-    href: "/doctor-dashboard",
-  },
-  {
-    icon: <Users className="w-5 h-5" />,
-    label: "Patients",
-    href: "/doctor-dashboard/patients",
-  },
-  {
-    icon: <FileText className="w-5 h-5" />,
-    label: "Prescriptions",
-    href: "/doctor-dashboard/prescriptions",
-  },
-  {
-    icon: <Calendar className="w-5 h-5" />,
-    label: "Appointments",
-    href: "/doctor-dashboard/appointments",
-  },
+  { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/doctor-dashboard" },
+  { icon: <Users className="w-5 h-5" />, label: "Patients", href: "/doctor-dashboard/patients" },
+  { icon: <FileText className="w-5 h-5" />, label: "Prescriptions", href: "/doctor-dashboard/prescriptions" },
+  { icon: <Calendar className="w-5 h-5" />, label: "Appointments", href: "/doctor-dashboard/appointments" },
 ];
-
-// In a real app this would be fetched by prescriptionId
-const prescriptionData = {
-  id: "RX-2345",
-  date: "2026-04-25",
-  patient: {
-    name: "John Doe",
-    id: "P001",
-    age: 45,
-    gender: "Male",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main Street, Springfield, IL 62701",
-  },
-  doctor: {
-    name: "Dr. Sarah Smith",
-    specialization: "Internal Medicine",
-    license: "MD-12345",
-    phone: "+1 (555) 987-6543",
-  },
-  hospital: {
-    name: "MediSync Health Center",
-    address: "456 Healthcare Ave, Springfield, IL 62702",
-    phone: "+1 (555) 111-2222",
-  },
-  diagnosis: "Hypertension Management",
-  symptoms: "Elevated blood pressure, occasional headaches, fatigue",
-  medicines: [
-    {
-      name: "Lisinopril",
-      strength: "10mg",
-      dosage: "1 tablet",
-      frequency: "Once daily",
-      timing: "Morning",
-      duration: "30 days",
-      instructions: "Take with food",
-    },
-    {
-      name: "Aspirin",
-      strength: "81mg",
-      dosage: "1 tablet",
-      frequency: "Once daily",
-      timing: "Night",
-      duration: "30 days",
-      instructions: "Take after dinner",
-    },
-  ],
-  notes:
-    "Monitor blood pressure daily. Follow low-sodium diet. Regular exercise recommended. Follow-up appointment in 2 weeks.",
-  followUp: "2026-05-09",
-};
 
 export default function PrescriptionViewerPage() {
   const router = useRouter();
   const params = useParams();
   const prescriptionId = params?.prescriptionId as string;
 
-  const rx = prescriptionData; // swap for a lookup by prescriptionId in a real app
+  const [rx, setRx] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!prescriptionId) return;
+
+    async function fetchPrescription() {
+      try {
+        const res = await fetch(`/api/doctor/prescription/${prescriptionId}`);
+        if (!res.ok) throw new Error("Failed to load prescription details");
+        const data = await res.json();
+        
+        // Transform for UI
+        setRx({
+          id: `RX-${data.id}`,
+          date: new Date(data.createdAt).toISOString().split('T')[0],
+          patient: {
+            name: data.patient.name,
+            id: `P${data.patient.id.toString().padStart(3, '0')}`,
+            age: data.patient.age || "-",
+            gender: data.patient.gender || "-",
+            phone: data.patient.phone || "-",
+            address: data.patient.address || "-",
+          },
+          doctor: {
+            name: data.doctor.name,
+            specialization: data.doctor.specialization || "Doctor",
+            license: data.doctor.license || "-",
+            phone: data.doctor.phone || "-",
+          },
+          hospital: {
+            name: "MediSync Health Center",
+            address: "456 Healthcare Ave, Springfield, IL 62702",
+            phone: "+1 (555) 111-2222",
+          },
+          diagnosis: data.diagnosis,
+          symptoms: data.symptoms || "None reported",
+          medicines: data.medicines || [],
+          tests: data.tests || [],
+          notes: data.notes || "No additional notes.",
+          followUp: "As needed", // Not in schema currently, could be added later
+        });
+      } catch (err: any) {
+        setError(err.message || "Failed to load prescription");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchPrescription();
+  }, [prescriptionId]);
+
+  if (loading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+          <p className="text-gray-500 dark:text-gray-400">Loading prescription details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !rx) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <p className="text-gray-800 dark:text-white font-medium text-lg">Error loading prescription</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">{error}</p>
+          <button
+            onClick={() => router.push("/doctor-dashboard/prescriptions")}
+            className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm font-medium"
+          >
+            Back to Prescriptions
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
@@ -233,7 +253,7 @@ export default function PrescriptionViewerPage() {
                 Prescribed Medications
               </p>
               <div className="space-y-4">
-                {rx.medicines.map((medicine, index) => (
+                {rx.medicines.map((medicine: any, index: number) => (
                   <div
                     key={index}
                     className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
@@ -271,6 +291,55 @@ export default function PrescriptionViewerPage() {
                 ))}
               </div>
             </div>
+
+            {/* Diagnostic Tests */}
+            {rx.tests && rx.tests.length > 0 && (
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Microscope className="w-4 h-4 text-orange-500" />
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    Diagnostic Tests Ordered
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {rx.tests.map((test: any, index: number) => (
+                    <div
+                      key={index}
+                      className="border border-orange-200 dark:border-orange-800 rounded-xl overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-5 py-3 bg-orange-50 dark:bg-orange-900/20">
+                        <div>
+                          <p className="font-semibold text-gray-800 dark:text-white text-sm">
+                            {index + 1}.&nbsp;{test.name}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">{test.type}</p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            test.urgency === "STAT (Immediate)"
+                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                              : test.urgency === "Urgent"
+                              ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                              : "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                          }`}
+                        >
+                          {test.urgency}
+                        </span>
+                      </div>
+                      {test.instructions && (
+                        <div className="px-5 py-3 border-t border-orange-100 dark:border-orange-900/30 flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Instructions: </span>
+                            {test.instructions}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
