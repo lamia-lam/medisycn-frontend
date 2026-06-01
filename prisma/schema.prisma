@@ -17,9 +17,10 @@ enum Role {
 model User {
   id        Int    @id @default(autoincrement())
   name      String
-  email     String @unique
+  email     String? @unique
   phone String? @unique
-  password  String
+  password  String?
+  isOffline Boolean @default(false)
   role      Role
   createdAt DateTime @default(now())
 
@@ -72,6 +73,7 @@ model DoctorPatient {
   patientId Int
 
   createdAt DateTime @default(now())
+  lastVisit DateTime @default(now())
 
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
   patient Patient @relation(fields: [patientId], references: [id])

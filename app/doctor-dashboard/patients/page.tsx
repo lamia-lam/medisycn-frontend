@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../components/DashboardLayout";
 import { Badge } from "../../components/Badge";
 import {
@@ -42,104 +42,7 @@ const sidebarItems = [
   },
 ];
 
-const patientsData = [
-  {
-    id: "P001",
-    name: "John Doe",
-    age: 45,
-    gender: "Male",
-    phone: "+1 (555) 123-4567",
-    condition: "Hypertension",
-    lastVisit: "2026-04-25",
-    status: "Active" as const,
-    initials: "JD",
-    avatarColor: "bg-cyan-100 text-cyan-700",
-  },
-  {
-    id: "P002",
-    name: "Jane Smith",
-    age: 32,
-    gender: "Female",
-    phone: "+1 (555) 234-5678",
-    condition: "Type 2 Diabetes",
-    lastVisit: "2026-04-23",
-    status: "Active" as const,
-    initials: "JS",
-    avatarColor: "bg-purple-100 text-purple-700",
-  },
-  {
-    id: "P003",
-    name: "Mike Johnson",
-    age: 28,
-    gender: "Male",
-    phone: "+1 (555) 345-6789",
-    condition: "Asthma",
-    lastVisit: "2026-04-20",
-    status: "Active" as const,
-    initials: "MJ",
-    avatarColor: "bg-green-100 text-green-700",
-  },
-  {
-    id: "P004",
-    name: "Sarah Williams",
-    age: 55,
-    gender: "Female",
-    phone: "+1 (555) 456-7890",
-    condition: "Arthritis",
-    lastVisit: "2026-04-18",
-    status: "Active" as const,
-    initials: "SW",
-    avatarColor: "bg-orange-100 text-orange-700",
-  },
-  {
-    id: "P005",
-    name: "Robert Brown",
-    age: 62,
-    gender: "Male",
-    phone: "+1 (555) 567-8901",
-    condition: "Heart Disease",
-    lastVisit: "2026-04-15",
-    status: "Critical" as const,
-    initials: "RB",
-    avatarColor: "bg-red-100 text-red-700",
-  },
-  {
-    id: "P006",
-    name: "Emily Davis",
-    age: 38,
-    gender: "Female",
-    phone: "+1 (555) 678-9012",
-    condition: "Migraine",
-    lastVisit: "2026-04-12",
-    status: "Active" as const,
-    initials: "ED",
-    avatarColor: "bg-pink-100 text-pink-700",
-  },
-  {
-    id: "P007",
-    name: "David Wilson",
-    age: 41,
-    gender: "Male",
-    phone: "+1 (555) 789-0123",
-    condition: "Thyroid Disorder",
-    lastVisit: "2026-04-10",
-    status: "Active" as const,
-    initials: "DW",
-    avatarColor: "bg-blue-100 text-blue-700",
-  },
-  {
-    id: "P008",
-    name: "Lisa Anderson",
-    age: 29,
-    gender: "Female",
-    phone: "+1 (555) 890-1234",
-    condition: "Anemia",
-    lastVisit: "2026-04-08",
-    status: "Inactive" as const,
-    initials: "LA",
-    avatarColor: "bg-gray-100 text-gray-600",
-  },
-];
+
 
 type Status = "Active" | "Inactive" | "Critical";
 
@@ -153,18 +56,33 @@ export default function PatientsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGender, setFilterGender] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [patients, setPatients] = useState(patientsData);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const res = await fetch("/api/doctor/patients/my-patients");
+        if (res.ok) {
+          const data = await res.json();
+          setPatients(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch patients", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPatients();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
     age: "",
     gender: "",
     phone: "",
-    condition: "",
     lastVisit: "",
-    status: "Active" as Status,
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -183,9 +101,9 @@ export default function PatientsPage() {
       age: parseInt(formData.age),
       gender: formData.gender,
       phone: formData.phone,
-      condition: formData.condition || "Not specified",
+      condition: "Not specified",
       lastVisit: formData.lastVisit || new Date().toISOString().split("T")[0],
-      status: formData.status,
+      status: "Active" as const,
       initials:
         formData.name
           .split(" ")
@@ -203,9 +121,7 @@ export default function PatientsPage() {
       age: "",
       gender: "",
       phone: "",
-      condition: "",
       lastVisit: "",
-      status: "Active",
     });
   };
 
@@ -216,9 +132,7 @@ export default function PatientsPage() {
       patient.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGender =
       filterGender === "all" || patient.gender.toLowerCase() === filterGender;
-    const matchesStatus =
-      filterStatus === "all" || patient.status.toLowerCase() === filterStatus;
-    return matchesSearch && matchesGender && matchesStatus;
+    return matchesSearch && matchesGender;
   });
 
   return (
@@ -253,22 +167,22 @@ export default function PatientsPage() {
               bg: "bg-cyan-50 dark:bg-cyan-900/20",
             },
             {
-              label: "Active",
-              value: patients.filter((p) => p.status === "Active").length,
-              color: "text-green-600",
-              bg: "bg-green-50 dark:bg-green-900/20",
+              label: "Male Patients",
+              value: patients.filter((p) => p.gender.toLowerCase() === "male").length,
+              color: "text-blue-600",
+              bg: "bg-blue-50 dark:bg-blue-900/20",
             },
             {
-              label: "Critical",
-              value: patients.filter((p) => p.status === "Critical").length,
-              color: "text-red-600",
-              bg: "bg-red-50 dark:bg-red-900/20",
+              label: "Female Patients",
+              value: patients.filter((p) => p.gender.toLowerCase() === "female").length,
+              color: "text-pink-600",
+              bg: "bg-pink-50 dark:bg-pink-900/20",
             },
             {
-              label: "Inactive",
-              value: patients.filter((p) => p.status === "Inactive").length,
-              color: "text-gray-500",
-              bg: "bg-gray-50 dark:bg-gray-800",
+              label: "Other Genders",
+              value: patients.filter((p) => !["male", "female"].includes(p.gender.toLowerCase())).length,
+              color: "text-purple-500",
+              bg: "bg-purple-50 dark:bg-purple-900/20",
             },
           ].map((stat) => (
             <div
@@ -311,19 +225,6 @@ export default function PatientsPage() {
                     <option value="female">Female</option>
                   </select>
                 </div>
-                <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="pl-9 pr-8 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-3">
@@ -353,13 +254,7 @@ export default function PatientsPage() {
                     Contact
                   </th>
                   <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    Condition
-                  </th>
-                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Last Visit
-                  </th>
-                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    Status
                   </th>
                   <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     Actions
@@ -397,18 +292,8 @@ export default function PatientsPage() {
                     <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {patient.phone}
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {patient.condition}
-                      </span>
-                    </td>
                     <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {patient.lastVisit}
-                    </td>
-                    <td className="px-4 py-4">
-                      <Badge variant={getStatusBadgeVariant(patient.status)}>
-                        {patient.status}
-                      </Badge>
                     </td>
                     {/* Actions */}
                     <td className="px-4 py-4">
@@ -549,19 +434,6 @@ export default function PatientsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Medical Condition
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter primary medical condition"
-                    value={formData.condition}
-                    onChange={(e) => handleInputChange("condition", e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
-                  />
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -573,23 +445,6 @@ export default function PatientsPage() {
                       onChange={(e) => handleInputChange("lastVisit", e.target.value)}
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) =>
-                        handleInputChange("status", e.target.value as Status)
-                      }
-                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Critical">Critical</option>
-                    </select>
                   </div>
                 </div>
               </div>

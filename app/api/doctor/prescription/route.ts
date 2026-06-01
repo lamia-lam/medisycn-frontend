@@ -1,57 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import jwt from "jsonwebtoken";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper – extract the verified doctor record from the JWT in the cookie.
-// Returns { doctor } on success or a NextResponse error to return immediately.
-// ─────────────────────────────────────────────────────────────────────────────
-async function getDoctor(req: NextRequest) {
-  const cookieHeader = req.headers.get("cookie");
-  const token = cookieHeader
-    ?.split("; ")
-    .find((c) => c.startsWith("token="))
-    ?.split("=")[1];
-
-  if (!token) {
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  let decoded: { id: number; role: string };
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: number;
-      role: string;
-    };
-  } catch {
-    return {
-      error: NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  if (decoded.role !== "DOCTOR") {
-    return {
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-  }
-
-  const doctor = await prisma.doctor.findUnique({
-    where: { userId: decoded.id },
-  });
-
-  if (!doctor) {
-    return {
-      error: NextResponse.json({ error: "Doctor not found" }, { status: 404 }),
-    };
-  }
-
-  return { doctor };
-}
+import { getDoctor } from "@/app/lib/auth";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/doctor/prescription
@@ -99,24 +48,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
 
-    // ── Ensure DoctorPatient relation exists (create only if absent) ──────────
-    const existingRelation = await prisma.doctorPatient.findUnique({
+    // ── Ensure DoctorPatient relation exists and update lastVisit ──────────
+    await prisma.doctorPatient.upsert({
       where: {
         doctorId_patientId: {
           doctorId: doctor!.id,
           patientId: patient.id,
         },
       },
+      update: {
+        lastVisit: new Date(),
+      },
+      create: {
+        doctorId: doctor!.id,
+        patientId: patient.id,
+        lastVisit: new Date(),
+      },
     });
-
-    if (!existingRelation) {
-      await prisma.doctorPatient.create({
-        data: {
-          doctorId: doctor!.id,
-          patientId: patient.id,
-        },
-      });
-    }
 
     // ── Save the prescription ─────────────────────────────────────────────────
     const prescription = await prisma.prescription.create({
