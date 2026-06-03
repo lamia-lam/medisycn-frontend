@@ -197,6 +197,9 @@ export default function PatientDashboard() {
                 {profile?.bloodGroup && (
                   <span>Blood Group: {profile.bloodGroup}</span>
                 )}
+                {profile?.dateOfBirth && (
+                  <span>DOB: {new Date(profile.dateOfBirth).toLocaleDateString()}</span>
+                )}
                 {profile?.condition && (
                   <span>Condition: {profile.condition}</span>
                 )}

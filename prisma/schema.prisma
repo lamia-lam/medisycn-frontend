@@ -52,6 +52,7 @@ model Patient {
   userId        Int      @unique
   age           Int?
   gender        String?
+  dateOfBirth   DateTime?
   bloodGroup    String?
   condition     String?
   address       String?

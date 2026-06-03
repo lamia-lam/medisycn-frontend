@@ -101,6 +101,7 @@ export default function NewPrescriptionPage() {
   const [qrPhone, setQrPhone] = useState("");
   const [qrAge, setQrAge] = useState("");
   const [qrGender, setQrGender] = useState("");
+  const [qrDob, setQrDob] = useState("");
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState("");
 
@@ -117,6 +118,7 @@ export default function NewPrescriptionPage() {
           phone: qrPhone,
           age: qrAge,
           gender: qrGender,
+          dateOfBirth: qrDob || null,
         }),
       });
       if (!res.ok) {
@@ -777,6 +779,10 @@ export default function NewPrescriptionPage() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className={labelClass}>Date of Birth</label>
+                <input type="date" value={qrDob} onChange={(e) => setQrDob(e.target.value)} className={inputClass} />
               </div>
               <div className="pt-4 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowQuickRegisterModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">

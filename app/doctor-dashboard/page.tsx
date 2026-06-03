@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Users,
@@ -7,7 +8,7 @@ import {
   Activity,
   Clock,
   Plus,
-  Search,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "../components/DashboardLayout";
@@ -36,57 +37,63 @@ const sidebarItems = [
   },
 ];
 
-const appointments = [
-  {
-    id: 1,
-    patient: "John Doe",
-    time: "09:00 AM",
-    type: "Consultation",
-    status: "Confirmed" as const,
-  },
-  {
-    id: 2,
-    patient: "Jane Smith",
-    time: "10:30 AM",
-    type: "Follow-up",
-    status: "Confirmed" as const,
-  },
-  {
-    id: 3,
-    patient: "Mike Johnson",
-    time: "02:00 PM",
-    type: "Check-up",
-    status: "Pending" as const,
-  },
-  {
-    id: 4,
-    patient: "Sarah Williams",
-    time: "03:30 PM",
-    type: "Consultation",
-    status: "Confirmed" as const,
-  },
-];
+type Appointment = {
+  id: number;
+  patient: string;
+  time: string;
+  type: string;
+  status: string;
+};
 
-const recentPatients = [
-  {
-    id: 1,
-    name: "John Doe",
-    lastVisit: "2026-04-25",
-    condition: "Hypertension",
-  },
-  { id: 2, name: "Jane Smith", lastVisit: "2026-04-23", condition: "Diabetes" },
-  { id: 3, name: "Mike Johnson", lastVisit: "2026-04-20", condition: "Asthma" },
-];
+type RecentPatient = {
+  id: number;
+  name: string;
+  lastVisit: string;
+};
 
 export default function DoctorDashboard() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    doctorName: "",
+    stats: {
+      totalPatients: 0,
+      todaysAppointments: 0,
+      totalPrescriptions: 0,
+    },
+    appointments: [] as Appointment[],
+    recentPatients: [] as RecentPatient[],
+  });
+
+  useEffect(() => {
+    fetch("/api/doctor/dashboard")
+      .then((res) => res.json())
+      .then((resData) => {
+        if (!resData.error) {
+          setData(resData);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
+        <div className="flex h-[80vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-[1.75rem] font-medium text-gray-800 dark:text-white mb-1">
-              Good Morning, Dr. Smith
+              Hello, Dr. {data.doctorName.split(' ').pop()}
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
               Here's what's happening today
@@ -105,22 +112,22 @@ export default function DoctorDashboard() {
           <StatCard
             icon={<Calendar className="w-6 h-6" />}
             label="Today's Appointments"
-            value={8}
-            trend="+2 from yesterday"
+            value={data.stats.todaysAppointments}
+            trend="Appointments today"
             color="bg-cyan-500"
           />
           <StatCard
             icon={<Users className="w-6 h-6" />}
             label="Total Patients"
-            value={156}
-            trend="+12 this month"
+            value={data.stats.totalPatients}
+            trend="Registered patients"
             color="bg-blue-500"
           />
           <StatCard
             icon={<FileText className="w-6 h-6" />}
             label="Prescriptions"
-            value={23}
-            trend="This week"
+            value={data.stats.totalPrescriptions}
+            trend="Total prescriptions"
             color="bg-green-500"
           />
           <StatCard
@@ -143,11 +150,16 @@ export default function DoctorDashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {appointments.map((apt, index) => (
-                <div
-                  key={apt.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 sm:gap-0 ${index !== appointments.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
-                >
+              {data.appointments.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                  No appointments scheduled for today.
+                </div>
+              ) : (
+                data.appointments.map((apt, index) => (
+                  <div
+                    key={apt.id}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 sm:gap-0 ${index !== data.appointments.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
+                  >
                   <div className="flex-1">
                     <p className="font-medium text-gray-800 dark:text-white mb-1">
                       {apt.patient}
@@ -164,42 +176,35 @@ export default function DoctorDashboard() {
                     {apt.status}
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 sm:gap-0">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-gray-800 dark:text-white text-lg">
                 Recent Patients
               </h3>
-              <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search patients..."
-                  className="w-full sm:w-64 pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0ab3b3]/50 dark:text-white placeholder-gray-400 shadow-sm"
-                />
-              </div>
             </div>
             <div className="space-y-4">
-              {recentPatients.map((patient, index) => (
-                <div
-                  key={patient.id}
-                  className={`flex items-center justify-between py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg cursor-pointer transition-colors ${index !== recentPatients.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
-                >
+              {data.recentPatients.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                  No recent patients found.
+                </div>
+              ) : (
+                data.recentPatients.map((patient, index) => (
+                  <div
+                    key={patient.id}
+                    className={`flex items-center justify-between py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors ${index !== data.recentPatients.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
+                  >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-medium">
                       {patient.name.charAt(0)}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-white mb-0.5">
-                        {patient.name}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {patient.condition}
-                      </p>
-                    </div>
+                    <p className="font-medium text-gray-800 dark:text-white">
+                      {patient.name}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
@@ -208,7 +213,8 @@ export default function DoctorDashboard() {
                     <p className="text-sm font-medium">{patient.lastVisit}</p>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

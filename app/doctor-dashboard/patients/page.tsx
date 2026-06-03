@@ -16,6 +16,7 @@ import {
   Trash2,
   History,
   X,
+  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -42,8 +43,6 @@ const sidebarItems = [
   },
 ];
 
-
-
 type Status = "Active" | "Inactive" | "Critical";
 
 function getStatusBadgeVariant(status: Status) {
@@ -59,6 +58,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -82,47 +82,57 @@ export default function PatientsPage() {
     age: "",
     gender: "",
     phone: "",
-    lastVisit: "",
+    dateOfBirth: "",
   });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAddPatient = () => {
+  const handleAddPatient = async () => {
     if (!formData.name || !formData.age || !formData.gender || !formData.phone) {
       alert("Please fill in all required fields");
       return;
     }
 
-    const newPatient = {
-      id: `P${String(patients.length + 1).padStart(3, "0")}`,
-      name: formData.name,
-      age: parseInt(formData.age),
-      gender: formData.gender,
-      phone: formData.phone,
-      condition: "Not specified",
-      lastVisit: formData.lastVisit || new Date().toISOString().split("T")[0],
-      status: "Active" as const,
-      initials:
-        formData.name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "XX",
-      avatarColor: "bg-cyan-100 text-cyan-700",
-    };
+    try {
+      const res = await fetch("/api/doctor/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          age: formData.age,
+          gender: formData.gender,
+          dateOfBirth: formData.dateOfBirth || null,
+        }),
+      });
 
-    setPatients([...patients, newPatient]);
-    setIsAddPatientOpen(false);
-    setFormData({
-      name: "",
-      age: "",
-      gender: "",
-      phone: "",
-      lastVisit: "",
-    });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to register patient");
+        return;
+      }
+
+      // Re-fetch patients to get the updated list
+      const fetchRes = await fetch("/api/doctor/patients/my-patients");
+      if (fetchRes.ok) {
+        const data = await fetchRes.json();
+        setPatients(data);
+      }
+
+      setIsAddPatientOpen(false);
+      setFormData({
+        name: "",
+        age: "",
+        gender: "",
+        phone: "",
+        dateOfBirth: "",
+      });
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while adding patient");
+    }
   };
 
   const filteredPatients = patients.filter((patient) => {
@@ -301,7 +311,7 @@ export default function PatientsPage() {
                         <button
                           onClick={() =>
                             router.push(
-                              `/doctor-dashboard/patients/${patient.id}/history`,
+                              `/doctor-dashboard/patients/${patient.dbId}/history`,
                             )
                           }
                           title="View History"
@@ -310,6 +320,7 @@ export default function PatientsPage() {
                           <History className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => setSelectedPatient(patient)}
                           title="View Details"
                           className="p-2 rounded-lg text-gray-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 transition-colors"
                         >
@@ -434,18 +445,16 @@ export default function PatientsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Last Visit Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.lastVisit}
-                      onChange={(e) => handleInputChange("lastVisit", e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
+                  />
                 </div>
               </div>
 
@@ -462,6 +471,97 @@ export default function PatientsPage() {
                 >
                   Add Patient
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View Patient Details Modal */}
+        {selectedPatient && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-cyan-700 to-cyan-500 p-6 relative rounded-t-xl shrink-0">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-full bg-white/20 border border-white/20 flex items-center justify-center font-bold text-2xl text-white shadow-sm shrink-0">
+                    {selectedPatient.initials}
+                  </div>
+                  <div className="flex-1 text-white">
+                    <h3 className="text-2xl font-semibold mb-1">
+                      {selectedPatient.name}
+                    </h3>
+                    <div className="flex items-center gap-3 text-sm text-cyan-100">
+                      <span className="bg-black/10 px-2 py-0.5 rounded-md font-medium">
+                        {selectedPatient.id}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${selectedPatient.status === 'Active' ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                        {selectedPatient.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedPatient(null)}
+                  className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-8">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-5 flex items-center gap-2">
+                    <User className="w-4 h-4 text-cyan-600" />
+                    Personal Information
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Age</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.age || "-"}</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Gender</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.gender || "-"}</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Date of Birth</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "-"}</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Blood Group</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.bloodGroup || "-"}</p>
+                    </div>
+                    <div className="col-span-2 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contact Number</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.phone || "-"}</p>
+                    </div>
+                    <div className="col-span-2 md:col-span-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Address</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.address || "No address provided"}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <hr className="border-gray-100 dark:border-gray-700" />
+                
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-5 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-cyan-600" />
+                    Medical Overview
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-xl border border-cyan-100 dark:border-cyan-800/30">
+                      <p className="text-sm text-cyan-600 dark:text-cyan-400 mb-1 font-medium">Known Conditions</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.condition || "None recorded"}</p>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mb-1 font-medium">Last Visit Date</p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.lastVisit ? new Date(selectedPatient.lastVisit).toLocaleDateString() : "-"}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

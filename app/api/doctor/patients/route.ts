@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     const body = await req.json();
-    const { name, phone, age, gender } = body;
+    const { name, phone, age, gender, dateOfBirth } = body;
 
     if (!name || !phone) {
       return NextResponse.json(
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
             userId: existingUser.id,
             age: age ? parseInt(age) : null,
             gender: gender || null,
+            dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
             status: "Active",
           },
         });
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
             create: {
               age: age ? parseInt(age) : null,
               gender: gender || null,
+              dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
               status: "Active",
             },
           },

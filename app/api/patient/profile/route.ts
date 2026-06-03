@@ -60,7 +60,7 @@ export async function PUT(req: Request) {
     };
 
     const body = await req.json();
-    const { age, gender, bloodGroup, condition, address } = body;
+    const { age, gender, bloodGroup, condition, address, dateOfBirth } = body;
 
     const patient = await prisma.patient.update({
       where: {
@@ -72,6 +72,7 @@ export async function PUT(req: Request) {
         bloodGroup,
         condition,
         address,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       },
       include: {
         user: true,

@@ -27,6 +27,7 @@ export function PatientProfileDrawer({
     age: "",
     bloodGroup: "A+",
     gender: "Male",
+    dateOfBirth: "",
     address: "",
     currentPassword: "",
     newPassword: "",
@@ -49,6 +50,7 @@ export function PatientProfileDrawer({
               age: data.age ? String(data.age) : "",
               bloodGroup: data.bloodGroup || "A+",
               gender: data.gender || "Male",
+              dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split("T")[0] : "",
               address: data.address || "",
             }));
             setPatientId(data.id);
@@ -69,6 +71,7 @@ export function PatientProfileDrawer({
           gender: formData.gender,
           bloodGroup: formData.bloodGroup,
           address: formData.address,
+          dateOfBirth: formData.dateOfBirth || null,
         }),
       });
       if (res.ok) {
@@ -220,6 +223,18 @@ export function PatientProfileDrawer({
                   }
                   className={inputClass}
                   placeholder="Enter your age"
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Date of Birth</label>
+                <input
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dateOfBirth: e.target.value })
+                  }
+                  className={inputClass}
                 />
               </div>
 
