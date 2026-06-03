@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Save,
   Send,
   User,
   Pill,
@@ -24,22 +23,31 @@ import { useRouter } from "next/navigation";
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 const sidebarItems = [
-  { icon: <Activity className="w-5 h-5" />, label: "Dashboard",     href: "/doctor-dashboard" },
-  { icon: <Users    className="w-5 h-5" />, label: "Patients",      href: "/doctor-dashboard/patients" },
-  { icon: <FileText className="w-5 h-5" />, label: "Prescriptions", href: "/doctor-dashboard/prescriptions" },
-  { icon: <Calendar className="w-5 h-5" />, label: "Appointments",  href: "/doctor-dashboard/appointments" },
-];
-
-// ── Medicine options (extend as needed) ───────────────────────────────────────
-const medicinesOptions = [
-  "Lisinopril 10mg", "Aspirin 81mg", "Metformin 500mg", "Amlodipine 5mg",
-  "Atorvastatin 20mg", "Omeprazole 20mg", "Levothyroxine 50mcg",
-  "Albuterol Inhaler", "Amoxicillin 500mg", "Ibuprofen 400mg",
+  {
+    icon: <Activity className="w-5 h-5" />,
+    label: "Dashboard",
+    href: "/doctor-dashboard",
+  },
+  {
+    icon: <Users className="w-5 h-5" />,
+    label: "Patients",
+    href: "/doctor-dashboard/patients",
+  },
+  {
+    icon: <FileText className="w-5 h-5" />,
+    label: "Prescriptions",
+    href: "/doctor-dashboard/prescriptions",
+  },
+  {
+    icon: <Calendar className="w-5 h-5" />,
+    label: "Appointments",
+    href: "/doctor-dashboard/appointments",
+  },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PatientOption {
-  id: number;           // Patient.id (DB primary key)
+  id: number; // Patient.id (DB primary key)
   name: string;
   age: number | null;
   gender: string | null;
@@ -49,7 +57,6 @@ interface PatientOption {
 interface Medicine {
   name: string;
   dosage: string;
-  frequency: string;
   durationDays: number | "";
   instructions: string;
 }
@@ -61,39 +68,46 @@ interface DiagnosticTest {
 }
 
 const defaultMedicine = (): Medicine => ({
-  name: "", dosage: "", frequency: "",
-  durationDays: "", instructions: "",
+  name: "",
+  dosage: "",
+  durationDays: "",
+  instructions: "",
 });
 
 const defaultTest = (): DiagnosticTest => ({
-  name: "", urgency: "Routine", instructions: "",
+  name: "",
+  urgency: "Routine",
+  instructions: "",
 });
 
 // ── Shared class strings ──────────────────────────────────────────────────────
 const inputClass =
   "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400 appearance-none";
-const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
+const labelClass =
+  "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewPrescriptionPage() {
   const router = useRouter();
 
   // ── Patient list (fetched from API) ─────────────────────────────────────────
-  const [patients, setPatients]         = useState<PatientOption[]>([]);
+  const [patients, setPatients] = useState<PatientOption[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
-  const [patientsError, setPatientsError]     = useState("");
+  const [patientsError, setPatientsError] = useState("");
 
   // ── Form state ───────────────────────────────────────────────────────────────
-  const [selectedPatientId, setSelectedPatientId] = useState<number | string>("");
+  const [selectedPatientId, setSelectedPatientId] = useState<number | string>(
+    "",
+  );
   const [nameSearch, setNameSearch] = useState("");
   const [showNameDropdown, setShowNameDropdown] = useState(false);
   const [phoneSearch, setPhoneSearch] = useState("");
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
-  const [diagnosis,  setDiagnosis]  = useState("");
-  const [symptoms,   setSymptoms]   = useState("");
-  const [notes,      setNotes]      = useState("");
-  const [medicines,  setMedicines]  = useState<Medicine[]>([defaultMedicine()]);
-  const [tests,      setTests]      = useState<DiagnosticTest[]>([]);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [symptoms, setSymptoms] = useState("");
+  const [notes, setNotes] = useState("");
+  const [medicines, setMedicines] = useState<Medicine[]>([defaultMedicine()]);
+  const [tests, setTests] = useState<DiagnosticTest[]>([]);
 
   // ── Quick Register Modal State ───────────────────────────────────────────────
   const [showQuickRegisterModal, setShowQuickRegisterModal] = useState(false);
@@ -101,7 +115,6 @@ export default function NewPrescriptionPage() {
   const [qrPhone, setQrPhone] = useState("");
   const [qrAge, setQrAge] = useState("");
   const [qrGender, setQrGender] = useState("");
-  const [qrDob, setQrDob] = useState("");
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState("");
 
@@ -118,7 +131,6 @@ export default function NewPrescriptionPage() {
           phone: qrPhone,
           age: qrAge,
           gender: qrGender,
-          dateOfBirth: qrDob || null,
         }),
       });
       if (!res.ok) {
@@ -148,7 +160,7 @@ export default function NewPrescriptionPage() {
   // ── Submit state ─────────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitted, setSubmitted]   = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // ── Load patients belonging to this doctor ───────────────────────────────────
   useEffect(() => {
@@ -158,18 +170,20 @@ export default function NewPrescriptionPage() {
         if (!res.ok) throw new Error("Failed to load patients");
         const data = await res.json();
         // data: [{ id, user: { name, phone }, age, gender, ... }]
-        const mapped: PatientOption[] = data.map((p: {
-          id: number;
-          user: { name: string; phone?: string | null };
-          age?: number | null;
-          gender?: string | null;
-        }) => ({
-          id: p.id,
-          name: p.user.name,
-          age: p.age ?? null,
-          gender: p.gender ?? null,
-          phone: p.user.phone ?? null,
-        }));
+        const mapped: PatientOption[] = data.map(
+          (p: {
+            id: number;
+            user: { name: string; phone?: string | null };
+            age?: number | null;
+            gender?: string | null;
+          }) => ({
+            id: p.id,
+            name: p.user.name,
+            age: p.age ?? null,
+            gender: p.gender ?? null,
+            phone: p.user.phone ?? null,
+          }),
+        );
         setPatients(mapped);
       } catch {
         setPatientsError("Could not load patient list.");
@@ -191,20 +205,30 @@ export default function NewPrescriptionPage() {
   }, []);
 
   // ── Medicine helpers ─────────────────────────────────────────────────────────
-  const addMedicine    = () => setMedicines([...medicines, defaultMedicine()]);
-  const removeMedicine = (i: number) => setMedicines(medicines.filter((_, idx) => idx !== i));
-  const updateMedicine = (i: number, field: keyof Medicine, value: string | number) => {
+  const addMedicine = () => setMedicines([...medicines, defaultMedicine()]);
+  const removeMedicine = (i: number) =>
+    setMedicines(medicines.filter((_, idx) => idx !== i));
+  const updateMedicine = (
+    i: number,
+    field: keyof Medicine,
+    value: string | number,
+  ) => {
     const updated = [...medicines];
-    updated[i] = { ...updated[i], [field]: value };
+    updated[i][field] = value as any;
     setMedicines(updated);
   };
 
   // ── Test helpers ─────────────────────────────────────────────────────────────
-  const addTest    = () => setTests([...tests, defaultTest()]);
-  const removeTest = (i: number) => setTests(tests.filter((_, idx) => idx !== i));
-  const updateTest = (i: number, field: keyof DiagnosticTest, value: string | number) => {
+  const addTest = () => setTests([...tests, defaultTest()]);
+  const removeTest = (i: number) =>
+    setTests(tests.filter((_, idx) => idx !== i));
+  const updateTest = (
+    i: number,
+    field: keyof DiagnosticTest,
+    value: string,
+  ) => {
     const updated = [...tests];
-    updated[i] = { ...updated[i], [field]: value };
+    updated[i][field] = value;
     setTests(updated);
   };
 
@@ -238,7 +262,9 @@ export default function NewPrescriptionPage() {
       setSubmitted(true);
       setTimeout(() => router.push("/doctor-dashboard/prescriptions"), 1600);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+      setSubmitError(
+        err instanceof Error ? err.message : "Something went wrong",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -269,7 +295,6 @@ export default function NewPrescriptionPage() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6 max-w-4xl">
-
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
@@ -298,14 +323,15 @@ export default function NewPrescriptionPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           {/* ── Patient Information ── */}
           <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-xl">
               <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center">
                 <User className="w-4 h-4 text-cyan-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 dark:text-white">Patient Information</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                Patient Information
+              </h3>
             </div>
 
             <div className="p-6">
@@ -316,7 +342,10 @@ export default function NewPrescriptionPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {/* Patient Name Search */}
                     <div className="relative">
                       <label className={labelClass}>Patient Name</label>
@@ -344,18 +373,32 @@ export default function NewPrescriptionPage() {
                           />
                           {showNameDropdown && nameSearch && (
                             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                              {Array.from(new Set(patients
-                                .filter(p => p.name.toLowerCase().includes(nameSearch.toLowerCase()))
-                                .map(p => p.name)
-                              )).length === 0 ? (
+                              {Array.from(
+                                new Set(
+                                  patients
+                                    .filter((p) =>
+                                      p.name
+                                        .toLowerCase()
+                                        .includes(nameSearch.toLowerCase()),
+                                    )
+                                    .map((p) => p.name),
+                                ),
+                              ).length === 0 ? (
                                 <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
                                   No matching patient name
                                 </div>
                               ) : (
-                                Array.from(new Set(patients
-                                  .filter(p => p.name.toLowerCase().includes(nameSearch.toLowerCase()))
-                                  .map(p => p.name)
-                                )).map((uniqueName) => (
+                                Array.from(
+                                  new Set(
+                                    patients
+                                      .filter((p) =>
+                                        p.name
+                                          .toLowerCase()
+                                          .includes(nameSearch.toLowerCase()),
+                                      )
+                                      .map((p) => p.name),
+                                  ),
+                                ).map((uniqueName) => (
                                   <button
                                     key={uniqueName}
                                     type="button"
@@ -363,7 +406,9 @@ export default function NewPrescriptionPage() {
                                       setNameSearch(uniqueName);
                                       setShowNameDropdown(false);
                                       // If only 1 patient has this name, automatically fill ID & phone
-                                      const matches = patients.filter(p => p.name === uniqueName);
+                                      const matches = patients.filter(
+                                        (p) => p.name === uniqueName,
+                                      );
                                       if (matches.length === 1) {
                                         setPhoneSearch(matches[0].phone || "");
                                         setSelectedPatientId(matches[0].id);
@@ -396,21 +441,33 @@ export default function NewPrescriptionPage() {
                           setPhoneSearch(val);
                           setShowPhoneDropdown(true);
                           const match = patients.find(
-                            (p) => p.name === nameSearch && p.phone === val
+                            (p) => p.name === nameSearch && p.phone === val,
                           );
                           if (match) setSelectedPatientId(match.id);
                           else setSelectedPatientId("");
                         }}
                         onFocus={() => setShowPhoneDropdown(true)}
-                        placeholder={nameSearch ? "Select or type phone number..." : "Enter patient name first..."}
+                        placeholder={
+                          nameSearch
+                            ? "Select or type phone number..."
+                            : "Enter patient name first..."
+                        }
                         className={`${inputClass} ${!nameSearch ? "bg-gray-100 dark:bg-gray-800/80 cursor-not-allowed" : ""}`}
                         required
                       />
                       {showPhoneDropdown && phoneSearch && nameSearch && (
                         <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                          {patients.filter(p => p.name === nameSearch && p.phone?.toLowerCase().includes(phoneSearch.toLowerCase())).length === 0 ? (
+                          {patients.filter(
+                            (p) =>
+                              p.name === nameSearch &&
+                              p.phone
+                                ?.toLowerCase()
+                                .includes(phoneSearch.toLowerCase()),
+                          ).length === 0 ? (
                             <div className="px-4 py-3 text-sm flex flex-col gap-3">
-                              <span className="text-gray-500 dark:text-gray-400">No phone matches for this name</span>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                No phone matches for this name
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -430,7 +487,13 @@ export default function NewPrescriptionPage() {
                             </div>
                           ) : (
                             patients
-                              .filter(p => p.name === nameSearch && p.phone?.toLowerCase().includes(phoneSearch.toLowerCase()))
+                              .filter(
+                                (p) =>
+                                  p.name === nameSearch &&
+                                  p.phone
+                                    ?.toLowerCase()
+                                    .includes(phoneSearch.toLowerCase()),
+                              )
                               .map((p) => (
                                 <button
                                   key={p.id}
@@ -478,7 +541,8 @@ export default function NewPrescriptionPage() {
                   ) : (
                     <div className="bg-gray-50 dark:bg-gray-900/40 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 flex items-center justify-center">
                       <p className="text-sm text-gray-400 text-center">
-                        Select patient name and select their phone number to see full details
+                        Select patient name and select their phone number to see
+                        full details
                       </p>
                     </div>
                   )}
@@ -493,7 +557,9 @@ export default function NewPrescriptionPage() {
               <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
                 <ClipboardList className="w-4 h-4 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 dark:text-white">Clinical Information</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                Clinical Information
+              </h3>
             </div>
             <div className="p-6 space-y-5">
               <div>
@@ -528,7 +594,9 @@ export default function NewPrescriptionPage() {
                 <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
                   <Pill className="w-4 h-4 text-green-600" />
                 </div>
-                <h3 className="font-semibold text-gray-800 dark:text-white">Medications</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-white">
+                  Medications
+                </h3>
               </div>
               <button
                 type="button"
@@ -542,7 +610,10 @@ export default function NewPrescriptionPage() {
 
             <div className="p-6 space-y-4">
               {medicines.map((medicine, index) => (
-                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                <div
+                  key={index}
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                >
                   <div className="flex items-center justify-between px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Medicine {index + 1}
@@ -560,45 +631,59 @@ export default function NewPrescriptionPage() {
                   <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="lg:col-span-2">
                       <label className={labelClass}>Medicine Name</label>
-                      <select
+                      <input
+                        type="text"
                         value={medicine.name}
-                        onChange={(e) => updateMedicine(index, "name", e.target.value)}
+                        onChange={(e) =>
+                          updateMedicine(index, "name", e.target.value)
+                        }
+                        placeholder="Medicine name"
                         className={inputClass}
                         required
-                      >
-                        <option value="">Select medicine…</option>
-                        {medicinesOptions.map((med, i) => (
-                          <option key={i} value={med}>{med}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div>
                       <label className={labelClass}>Dosage</label>
-                      <input type="text" value={medicine.dosage}
-                        onChange={(e) => updateMedicine(index, "dosage", e.target.value)}
-                        placeholder="e.g., 1 tablet, 2 capsules"
-                        className={inputClass} required />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Frequency</label>
-                      <input type="text" value={medicine.frequency}
-                        onChange={(e) => updateMedicine(index, "frequency", e.target.value)}
+                      <input
+                        type="text"
+                        value={medicine.dosage}
+                        onChange={(e) =>
+                          updateMedicine(index, "dosage", e.target.value)
+                        }
                         placeholder="e.g., 1+0+1"
-                        className={inputClass} required />
+                        className={inputClass}
+                        required
+                      />
                     </div>
                     <div>
-                      <label className={labelClass}>Duration (Days)</label>
-                      <input type="number" value={medicine.durationDays}
-                        onChange={(e) => updateMedicine(index, "durationDays", e.target.value ? Number(e.target.value) : "")}
-                        placeholder="e.g., 3"
-                        className={inputClass} required />
+                      <label className={labelClass}>Duration (days)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={medicine.durationDays}
+                        onChange={(e) =>
+                          updateMedicine(
+                            index,
+                            "durationDays",
+                            e.target.value ? parseInt(e.target.value) : "",
+                          )
+                        }
+                        placeholder="e.g., 7"
+                        className={inputClass}
+                        required
+                      />
                     </div>
                     <div className="lg:col-span-2">
                       <label className={labelClass}>Special Instructions</label>
-                      <input type="text" value={medicine.instructions}
-                        onChange={(e) => updateMedicine(index, "instructions", e.target.value)}
+                      <input
+                        type="text"
+                        value={medicine.instructions}
+                        onChange={(e) =>
+                          updateMedicine(index, "instructions", e.target.value)
+                        }
                         placeholder="e.g., Take with food, Avoid alcohol"
-                        className={inputClass} />
+                        className={inputClass}
+                      />
                     </div>
                   </div>
                 </div>
@@ -614,8 +699,12 @@ export default function NewPrescriptionPage() {
                   <Microscope className="w-4 h-4 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-white">Diagnostic Tests</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Lab / imaging tests ordered for this prescription</p>
+                  <h3 className="font-semibold text-gray-800 dark:text-white">
+                    Diagnostic Tests
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Lab / imaging tests ordered for this prescription
+                  </p>
                 </div>
               </div>
               <button
@@ -634,13 +723,20 @@ export default function NewPrescriptionPage() {
                   <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center mx-auto mb-3">
                     <Microscope className="w-6 h-6 text-orange-400" />
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No diagnostic tests added yet.</p>
-                  <p className="text-xs text-gray-400 mt-1">Click &quot;Add Test&quot; to order lab or imaging tests.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No diagnostic tests added yet.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Click &quot;Add Test&quot; to order lab or imaging tests.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {tests.map((test, index) => (
-                    <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <div
+                      key={index}
+                      className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                    >
                       <div className="flex items-center justify-between px-5 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                         <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                           Test {index + 1}
@@ -659,7 +755,9 @@ export default function NewPrescriptionPage() {
                           <input
                             type="text"
                             value={test.name}
-                            onChange={(e) => updateTest(index, "name", e.target.value)}
+                            onChange={(e) =>
+                              updateTest(index, "name", e.target.value)
+                            }
                             placeholder="e.g., Complete Blood Count, Chest X-Ray, ECG"
                             className={inputClass}
                             required
@@ -667,20 +765,31 @@ export default function NewPrescriptionPage() {
                         </div>
                         <div>
                           <label className={labelClass}>Urgency</label>
-                          <select value={test.urgency}
-                            onChange={(e) => updateTest(index, "urgency", e.target.value)}
-                            className={inputClass}>
+                          <select
+                            value={test.urgency}
+                            onChange={(e) =>
+                              updateTest(index, "urgency", e.target.value)
+                            }
+                            className={inputClass}
+                          >
                             <option>Routine</option>
                             <option>Urgent</option>
                             <option>STAT (Immediate)</option>
                           </select>
                         </div>
                         <div className="lg:col-span-2">
-                          <label className={labelClass}>Special Instructions</label>
-                          <input type="text" value={test.instructions}
-                            onChange={(e) => updateTest(index, "instructions", e.target.value)}
+                          <label className={labelClass}>
+                            Special Instructions
+                          </label>
+                          <input
+                            type="text"
+                            value={test.instructions}
+                            onChange={(e) =>
+                              updateTest(index, "instructions", e.target.value)
+                            }
                             placeholder="e.g., Fasting required, collect morning sample"
-                            className={inputClass} />
+                            className={inputClass}
+                          />
                         </div>
                       </div>
                     </div>
@@ -696,7 +805,9 @@ export default function NewPrescriptionPage() {
               <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-800 dark:text-white">Additional Information</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                Additional Information
+              </h3>
             </div>
             <div className="p-6">
               <label className={labelClass}>Doctor&apos;s Notes</label>
@@ -720,21 +831,18 @@ export default function NewPrescriptionPage() {
               Cancel
             </button>
             <button
-              type="button"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              Save Draft
-            </button>
-            <button
               type="submit"
               disabled={submitting}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
             >
               {submitting ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                </>
               ) : (
-                <><Send className="w-4 h-4" /> Send Prescription</>
+                <>
+                  <Send className="w-4 h-4" /> Save Prescription
+                </>
               )}
             </button>
           </div>
@@ -746,8 +854,14 @@ export default function NewPrescriptionPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 dark:text-white">Quick Register Patient</h3>
-              <button type="button" onClick={() => setShowQuickRegisterModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                Quick Register Patient
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowQuickRegisterModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -759,20 +873,41 @@ export default function NewPrescriptionPage() {
               )}
               <div>
                 <label className={labelClass}>Patient Name</label>
-                <input type="text" value={qrName} onChange={(e) => setQrName(e.target.value)} className={inputClass} required />
+                <input
+                  type="text"
+                  value={qrName}
+                  onChange={(e) => setQrName(e.target.value)}
+                  className={inputClass}
+                  required
+                />
               </div>
               <div>
                 <label className={labelClass}>Phone Number</label>
-                <input type="text" value={qrPhone} onChange={(e) => setQrPhone(e.target.value)} className={inputClass} required />
+                <input
+                  type="text"
+                  value={qrPhone}
+                  onChange={(e) => setQrPhone(e.target.value)}
+                  className={inputClass}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Age</label>
-                  <input type="number" value={qrAge} onChange={(e) => setQrAge(e.target.value)} className={inputClass} />
+                  <input
+                    type="number"
+                    value={qrAge}
+                    onChange={(e) => setQrAge(e.target.value)}
+                    className={inputClass}
+                  />
                 </div>
                 <div>
                   <label className={labelClass}>Gender</label>
-                  <select value={qrGender} onChange={(e) => setQrGender(e.target.value)} className={inputClass}>
+                  <select
+                    value={qrGender}
+                    onChange={(e) => setQrGender(e.target.value)}
+                    className={inputClass}
+                  >
                     <option value="">Select...</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -780,15 +915,19 @@ export default function NewPrescriptionPage() {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Date of Birth</label>
-                <input type="date" value={qrDob} onChange={(e) => setQrDob(e.target.value)} className={inputClass} />
-              </div>
               <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowQuickRegisterModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickRegisterModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={qrLoading} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50 transition-colors">
+                <button
+                  type="submit"
+                  disabled={qrLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50 transition-colors"
+                >
                   {qrLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {qrLoading ? "Saving..." : "Save Patient"}
                 </button>

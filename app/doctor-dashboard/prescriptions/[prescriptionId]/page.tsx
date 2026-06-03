@@ -268,13 +268,14 @@ export default function PrescriptionViewerPage() {
                           </span>
                         </p>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          {medicine.dosage} · {medicine.frequency} ·{" "}
-                          {medicine.timing}
+                          {medicine.dosage}
                         </p>
                       </div>
-                      <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
-                        {medicine.duration}
-                      </span>
+                      {(medicine.duration || medicine.durationDays) && (
+                        <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
+                          {medicine.durationDays ? `${medicine.durationDays} Days` : medicine.duration}
+                        </span>
+                      )}
                     </div>
 
                     {/* Instructions */}
@@ -312,7 +313,6 @@ export default function PrescriptionViewerPage() {
                           <p className="font-semibold text-gray-800 dark:text-white text-sm">
                             {index + 1}.&nbsp;{test.name}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">{test.type}</p>
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${

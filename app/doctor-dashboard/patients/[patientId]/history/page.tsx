@@ -48,8 +48,7 @@ const sidebarItems = [
 interface Medicine {
   name: string;
   dosage?: string;
-  frequency?: string;
-  duration?: string;
+  durationDays?: string | number;
   instructions?: string;
 }
 
@@ -67,6 +66,32 @@ interface Prescription {
     specialization?: string | null;
     user: { name: string };
   };
+}
+
+interface DetailedPrescription {
+  id: number;
+  diagnosis: string;
+  symptoms?: string | null;
+  medicines?: any;
+  tests?: any;
+  notes?: string | null;
+  createdAt: string;
+  doctor?: {
+    name: string;
+    specialization?: string | null;
+    license?: string | null;
+    phone?: string | null;
+  } | null;
+  patient?: {
+    id: number;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    age?: number | null;
+    gender?: string | null;
+    bloodGroup?: string | null;
+    address?: string | null;
+  } | null;
 }
 
 interface Patient {
@@ -107,9 +132,9 @@ function formatTime(dateStr: string) {
 
 function getMedicineNames(medicines: Medicine[] | string[]): string[] {
   if (!medicines || !Array.isArray(medicines)) return [];
-  return medicines.map((m) => {
+  return medicines.map((m: any) => {
     if (typeof m === "string") return m;
-    if (m.name) {
+    if (m && m.name) {
       return m.dosage ? `${m.name} ${m.dosage}` : m.name;
     }
     return String(m);
@@ -128,12 +153,12 @@ export default function PatientHistoryPage() {
 
   // Modal states
   const [recordsModal, setRecordsModal] = useState<Prescription | null>(null);
-  const [rxModal, setRxModal] = useState<Record<string, unknown> | null>(null);
+  const [rxModal, setRxModal] = useState<DetailedPrescription | null>(null);
   const [rxLoading, setRxLoading] = useState(false);
 
   async function openPrescriptionModal(id: number) {
     setRxLoading(true);
-    setRxModal({} as Record<string, unknown>); // open modal in loading state
+    setRxModal({} as DetailedPrescription); // open modal in loading state
     try {
       const res = await fetch(`/api/doctor/prescription/${id}`);
       if (!res.ok) throw new Error("Failed to load");
@@ -303,7 +328,7 @@ export default function PatientHistoryPage() {
                     <div className="space-y-5">
                       {prescriptions.map((prescription, index) => {
                         const medicineNames = getMedicineNames(
-                          prescription.medicines as Medicine[] | string[]
+                          prescription.medicines as Medicine[] | string[],
                         );
                         return (
                           <div
@@ -331,7 +356,8 @@ export default function PatientHistoryPage() {
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-gray-400">
                                     <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">
-                                      RX-{prescription.id
+                                      RX-
+                                      {prescription.id
                                         .toString()
                                         .padStart(4, "0")}
                                     </span>
@@ -359,25 +385,44 @@ export default function PatientHistoryPage() {
                                 </div>
                               </div>
 
-                              {/* Medicine tags */}
-                              {medicineNames.length > 0 && (
+                              {/* Medicine & Test count summary */}
+                              {(medicineNames.length > 0 ||
+                                (Array.isArray(prescription.tests) &&
+                                  (prescription.tests as unknown[]).length >
+                                    0)) && (
                                 <div className="flex flex-wrap gap-2 mb-3">
-                                  {medicineNames.map((med, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium"
-                                    >
+                                  {medicineNames.length > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-semibold">
                                       <Pill className="w-3 h-3" />
-                                      {med}
+                                      Medicines&nbsp;
+                                      <span className="bg-cyan-600 dark:bg-cyan-500 text-white rounded-full px-1.5 py-0.5 text-[10px] leading-none font-bold">
+                                        {medicineNames.length}
+                                      </span>
                                     </span>
-                                  ))}
+                                  )}
+                                  {Array.isArray(prescription.tests) &&
+                                    (prescription.tests as unknown[]).length >
+                                      0 && (
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded-full text-xs font-semibold">
+                                        <Microscope className="w-3 h-3" />
+                                        Tests&nbsp;
+                                        <span className="bg-orange-500 dark:bg-orange-400 text-white rounded-full px-1.5 py-0.5 text-[10px] leading-none font-bold">
+                                          {
+                                            (prescription.tests as unknown[])
+                                              .length
+                                          }
+                                        </span>
+                                      </span>
+                                    )}
                                 </div>
                               )}
 
                               {/* Actions */}
                               <div className="flex items-center gap-3 pt-2.5 border-t border-gray-200 dark:border-gray-700">
                                 <button
-                                  onClick={() => openPrescriptionModal(prescription.id)}
+                                  onClick={() =>
+                                    openPrescriptionModal(prescription.id)
+                                  }
                                   className="inline-flex items-center gap-1.5 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-semibold transition-colors"
                                 >
                                   <FileText className="w-3.5 h-3.5" />
@@ -420,7 +465,9 @@ export default function PatientHistoryPage() {
             {rxLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 className="w-9 h-9 text-cyan-500 animate-spin" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">Loading prescription…</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Loading prescription…
+                </p>
               </div>
             ) : (
               <>
@@ -449,9 +496,15 @@ export default function PatientHistoryPage() {
                     <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 mb-3">
                       <span className="text-xl font-bold">MS</span>
                     </div>
-                    <h4 className="text-xl font-semibold mb-0.5">MediSync Health Center</h4>
-                    <p className="text-sm text-white/80">456 Healthcare Ave, Springfield, IL 62702</p>
-                    <p className="text-sm text-white/80">Phone: +1 (555) 111-2222</p>
+                    <h4 className="text-xl font-semibold mb-0.5">
+                      MediSync Health Center
+                    </h4>
+                    <p className="text-sm text-white/80">
+                      456 Healthcare Ave, Springfield, IL 62702
+                    </p>
+                    <p className="text-sm text-white/80">
+                      Phone: +1 (555) 111-2222
+                    </p>
                   </div>
 
                   {/* Document body */}
@@ -464,16 +517,16 @@ export default function PatientHistoryPage() {
                         </p>
                         <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1">
                           <p className="font-semibold text-gray-800 dark:text-white">
-                            {(rxModal?.doctor as Record<string, string>)?.name}
+                            {rxModal?.doctor?.name}
                           </p>
                           <p className="text-sm text-cyan-600 dark:text-cyan-400">
-                            {(rxModal?.doctor as Record<string, string>)?.specialization || "Doctor"}
+                            {rxModal?.doctor?.specialization || "Doctor"}
                           </p>
                           <p className="text-sm text-gray-500">
-                            License: {(rxModal?.doctor as Record<string, string>)?.license || "—"}
+                            License: {rxModal?.doctor?.license || "—"}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Phone: {(rxModal?.doctor as Record<string, string>)?.phone || "—"}
+                            Phone: {rxModal?.doctor?.phone || "—"}
                           </p>
                         </div>
                       </div>
@@ -483,23 +536,28 @@ export default function PatientHistoryPage() {
                         </p>
                         <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-1">
                           <p className="font-semibold text-gray-800 dark:text-white">
-                            {(rxModal?.patient as Record<string, string>)?.name}
+                            {rxModal?.patient?.name}
                           </p>
                           <p className="text-sm text-gray-500">
-                            ID: P{String((rxModal?.patient as Record<string, string>)?.id ?? "").padStart(3, "0")}
+                            ID: P
+                            {String(rxModal?.patient?.id ?? "").padStart(
+                              3,
+                              "0",
+                            )}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {(rxModal?.patient as Record<string, string>)?.age} yrs
-                            {(rxModal?.patient as Record<string, string>)?.gender && ` · ${(rxModal?.patient as Record<string, string>)?.gender}`}
+                            {rxModal?.patient?.age} yrs
+                            {rxModal?.patient?.gender &&
+                              ` · ${rxModal.patient.gender}`}
                           </p>
-                          {(rxModal?.patient as Record<string, string>)?.phone && (
+                          {rxModal?.patient?.phone && (
                             <p className="text-sm text-gray-500">
-                              {(rxModal?.patient as Record<string, string>)?.phone}
+                              {rxModal.patient.phone}
                             </p>
                           )}
-                          {(rxModal?.patient as Record<string, string>)?.address && (
+                          {rxModal?.patient?.address && (
                             <p className="text-sm text-gray-500">
-                              {(rxModal?.patient as Record<string, string>)?.address}
+                              {rxModal.patient.address}
                             </p>
                           )}
                         </div>
@@ -509,10 +567,14 @@ export default function PatientHistoryPage() {
                     {/* Date + ID row */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
-                        <p className="text-xs text-gray-400 mb-1">Date Issued</p>
+                        <p className="text-xs text-gray-400 mb-1">
+                          Date Issued
+                        </p>
                         <p className="font-medium text-gray-800 dark:text-white">
                           {rxModal?.createdAt
-                            ? new Date(String(rxModal.createdAt)).toLocaleDateString("en-US", {
+                            ? new Date(
+                                String(rxModal.createdAt),
+                              ).toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
@@ -521,7 +583,9 @@ export default function PatientHistoryPage() {
                         </p>
                       </div>
                       <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
-                        <p className="text-xs text-gray-400 mb-1">Prescription ID</p>
+                        <p className="text-xs text-gray-400 mb-1">
+                          Prescription ID
+                        </p>
                         <p className="font-mono font-medium text-gray-800 dark:text-white">
                           RX-{String(rxModal?.id ?? "").padStart(4, "0")}
                         </p>
@@ -547,96 +611,115 @@ export default function PatientHistoryPage() {
                       </p>
                       <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
                         <p className="text-gray-700 dark:text-gray-300">
-                          {rxModal?.symptoms ? String(rxModal.symptoms) : "None reported"}
+                          {rxModal?.symptoms
+                            ? String(rxModal.symptoms)
+                            : "None reported"}
                         </p>
                       </div>
                     </div>
 
                     {/* Medicines */}
-                    {Array.isArray(rxModal?.medicines) && (rxModal.medicines as unknown[]).length > 0 && (
-                      <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
-                          Prescribed Medications
-                        </p>
-                        <div className="space-y-4">
-                          {(rxModal.medicines as Record<string, string>[]).map((med, idx) => (
-                            <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                              <div className="flex items-center justify-between px-5 py-4 bg-gray-50 dark:bg-gray-900/50">
-                                <div>
-                                  <p className="font-semibold text-gray-800 dark:text-white">
-                                    {idx + 1}.&nbsp;{med.name}&nbsp;
-                                    <span className="text-cyan-600 dark:text-cyan-400">{med.strength}</span>
-                                  </p>
-                                  <p className="text-sm text-gray-500 mt-0.5">
-                                    {[med.dosage, med.frequency, med.timing].filter(Boolean).join(" · ")}
-                                  </p>
+                    {Array.isArray(rxModal?.medicines) &&
+                      rxModal.medicines.length > 0 && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
+                            Prescribed Medications
+                          </p>
+                          <div className="space-y-4">
+                            {rxModal.medicines.map((med: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+                              >
+                                <div className="flex items-center justify-between px-5 py-4 bg-gray-50 dark:bg-gray-900/50">
+                                  <div>
+                                    <p className="font-semibold text-gray-800 dark:text-white">
+                                      {idx + 1}.&nbsp;{med.name}&nbsp;
+                                      <span className="text-cyan-600 dark:text-cyan-400">
+                                        {med.strength}
+                                      </span>
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                      {[med.dosage].filter(Boolean).join(" · ")}
+                                    </p>
+                                  </div>
+                                  {(med.duration || med.durationDays) && (
+                                    <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium shrink-0">
+                                      {med.durationDays
+                                        ? `${med.durationDays} Days`
+                                        : med.duration}
+                                    </span>
+                                  )}
                                 </div>
-                                {med.duration && (
-                                  <span className="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium shrink-0">
-                                    {med.duration}
-                                  </span>
+                                {med.instructions && (
+                                  <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-start gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        Instructions:{" "}
+                                      </span>
+                                      {med.instructions}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
-                              {med.instructions && (
-                                <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-start gap-2">
-                                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    <span className="font-medium text-gray-700 dark:text-gray-300">Instructions: </span>
-                                    {med.instructions}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Tests */}
-                    {Array.isArray(rxModal?.tests) && (rxModal.tests as unknown[]).length > 0 && (
-                      <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <Microscope className="w-4 h-4 text-orange-500" />
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                            Diagnostic Tests Ordered
-                          </p>
-                        </div>
-                        <div className="space-y-3">
-                          {(rxModal.tests as Record<string, string>[]).map((test, idx) => (
-                            <div key={idx} className="border border-orange-200 dark:border-orange-800 rounded-xl overflow-hidden">
-                              <div className="flex items-center justify-between px-5 py-3 bg-orange-50 dark:bg-orange-900/20">
-                                <div>
-                                  <p className="font-semibold text-gray-800 dark:text-white text-sm">
-                                    {idx + 1}.&nbsp;{test.name}
-                                  </p>
-                                  {test.type && <p className="text-xs text-gray-500 mt-0.5">{test.type}</p>}
+                    {Array.isArray(rxModal?.tests) &&
+                      rxModal.tests.length > 0 && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Microscope className="w-4 h-4 text-orange-500" />
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Diagnostic Tests Ordered
+                            </p>
+                          </div>
+                          <div className="space-y-3">
+                            {rxModal.tests.map((test: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="border border-orange-200 dark:border-orange-800 rounded-xl overflow-hidden"
+                              >
+                                <div className="flex items-center justify-between px-5 py-3 bg-orange-50 dark:bg-orange-900/20">
+                                  <div>
+                                    <p className="font-semibold text-gray-800 dark:text-white text-sm">
+                                      {idx + 1}.&nbsp;{test.name}
+                                    </p>
+                                  </div>
+                                  {test.urgency && (
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                        test.urgency === "STAT (Immediate)"
+                                          ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                          : test.urgency === "Urgent"
+                                            ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                                            : "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+                                      }`}
+                                    >
+                                      {test.urgency}
+                                    </span>
+                                  )}
                                 </div>
-                                {test.urgency && (
-                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                    test.urgency === "STAT (Immediate)"
-                                      ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                                      : test.urgency === "Urgent"
-                                      ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                                      : "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-                                  }`}>
-                                    {test.urgency}
-                                  </span>
+                                {test.instructions && (
+                                  <div className="px-5 py-3 border-t border-orange-100 dark:border-orange-900/30 flex items-start gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        Instructions:{" "}
+                                      </span>
+                                      {test.instructions}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
-                              {test.instructions && (
-                                <div className="px-5 py-3 border-t border-orange-100 dark:border-orange-900/30 flex items-start gap-2">
-                                  <CheckCircle2 className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    <span className="font-medium text-gray-700 dark:text-gray-300">Instructions: </span>
-                                    {test.instructions}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Notes */}
                     <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
@@ -645,7 +728,9 @@ export default function PatientHistoryPage() {
                       </p>
                       <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl p-4">
                         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                          {rxModal?.notes ? String(rxModal.notes) : "No additional notes."}
+                          {rxModal?.notes
+                            ? String(rxModal.notes)
+                            : "No additional notes."}
                         </p>
                       </div>
                     </div>
@@ -654,7 +739,9 @@ export default function PatientHistoryPage() {
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-blue-500 shrink-0" />
                       <p className="text-sm text-blue-800 dark:text-blue-300">
-                        <span className="font-semibold">Follow-up Appointment: </span>
+                        <span className="font-semibold">
+                          Follow-up Appointment:{" "}
+                        </span>
                         As needed
                       </p>
                     </div>
@@ -662,17 +749,19 @@ export default function PatientHistoryPage() {
                     {/* Signature row */}
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-5 flex items-end justify-between gap-6">
                       <div>
-                        <p className="text-xs text-gray-400 mb-3">Authorized Signature</p>
+                        <p className="text-xs text-gray-400 mb-3">
+                          Authorized Signature
+                        </p>
                         <div className="w-48 border-b-2 border-gray-300 dark:border-gray-600 pb-1 mb-2">
                           <p className="text-2xl italic text-gray-700 dark:text-gray-300 font-serif">
-                            {(rxModal?.doctor as Record<string, string>)?.name}
+                            {rxModal?.doctor?.name}
                           </p>
                         </div>
                         <p className="text-sm text-gray-500">
-                          {(rxModal?.doctor as Record<string, string>)?.name}
+                          {rxModal?.doctor?.name}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {(rxModal?.doctor as Record<string, string>)?.specialization || "Doctor"}
+                          {rxModal?.doctor?.specialization || "Doctor"}
                         </p>
                       </div>
                       <div className="text-right">
@@ -684,10 +773,14 @@ export default function PatientHistoryPage() {
                         </div>
                         <p className="text-xs text-gray-400">
                           {rxModal?.createdAt
-                            ? new Date(String(rxModal.createdAt)).toLocaleDateString("en-US")
+                            ? new Date(
+                                String(rxModal.createdAt),
+                              ).toLocaleDateString("en-US")
                             : ""}
                         </p>
-                        <p className="text-xs text-gray-400">MediSync Health System</p>
+                        <p className="text-xs text-gray-400">
+                          MediSync Health System
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -783,25 +876,24 @@ export default function PatientHistoryPage() {
               </div>
 
               {/* Ordered tests if any */}
-              {recordsModal.tests &&
-                Array.isArray(recordsModal.tests) &&
+              {Array.isArray(recordsModal.tests) &&
                 recordsModal.tests.length > 0 && (
                   <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
                       Ordered Tests
                     </p>
                     <div className="space-y-2">
-                      {(recordsModal.tests as { name?: string; test?: string }[]).map(
-                        (test, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-                          >
-                            <ChevronRight className="w-4 h-4 text-cyan-500 shrink-0" />
-                            {test.name || test.test || String(test)}
-                          </div>
-                        )
-                      )}
+                      {(
+                        recordsModal.tests as { name?: string; test?: string }[]
+                      ).map((test, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          <ChevronRight className="w-4 h-4 text-cyan-500 shrink-0" />
+                          {test.name || test.test || String(test)}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -809,7 +901,7 @@ export default function PatientHistoryPage() {
               {/* No records notice */}
               {(!recordsModal.tests ||
                 !Array.isArray(recordsModal.tests) ||
-                recordsModal.tests.length === 0) && (
+                (recordsModal.tests as unknown[]).length === 0) && (
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
                   <FolderOpen className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                   <p className="text-sm text-gray-400 dark:text-gray-500">
