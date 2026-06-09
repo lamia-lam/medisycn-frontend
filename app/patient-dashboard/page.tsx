@@ -43,68 +43,28 @@ export const patientSidebarItems = [
   },
 ];
 
-const upcomingAppointments = [
-  {
-    id: 1,
-    doctor: "Dr. Emily Clarke",
-    specialty: "Cardiologist",
-    date: "2026-05-12",
-    time: "10:00 AM",
-    type: "Follow-up",
-    status: "Confirmed" as const,
-    initials: "EC",
-    avatarColor: "bg-cyan-100 text-cyan-700",
-  },
-  {
-    id: 2,
-    doctor: "Dr. James Wilson",
-    specialty: "General Physician",
-    date: "2026-05-15",
-    time: "02:30 PM",
-    type: "Consultation",
-    status: "Pending" as const,
-    initials: "JW",
-    avatarColor: "bg-purple-100 text-purple-700",
-  },
-  {
-    id: 3,
-    doctor: "Dr. Sarah Patel",
-    specialty: "Dermatologist",
-    date: "2026-05-20",
-    time: "11:00 AM",
-    type: "Check-up",
-    status: "Confirmed" as const,
-    initials: "SP",
-    avatarColor: "bg-green-100 text-green-700",
-  },
-];
-
-const recentPrescriptions = [
-  {
-    id: 1,
-    doctor: "Dr. Emily Clarke",
-    diagnosis: "Hypertension",
-    date: "2026-04-28",
-    medicines: ["Amlodipine 5mg", "Lisinopril 10mg"],
-  },
-  {
-    id: 2,
-    doctor: "Dr. James Wilson",
-    diagnosis: "Type 2 Diabetes",
-    date: "2026-04-15",
-    medicines: ["Metformin 500mg", "Glipizide 5mg"],
-  },
-];
+// Mock data removed in favor of real database fetching
 
 export default function PatientDashboard() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/patient/profile")
-      .then((res) => res.json())
-      .then((data) => setProfile(data))
-      .catch(console.error);
+    Promise.all([
+      fetch("/api/patient/profile").then((res) => res.json()),
+      fetch("/api/patient/appointments").then((res) => res.json()),
+      fetch("/api/patient/prescription").then((res) => res.json()),
+    ])
+      .then(([profileData, aptsData, rxData]) => {
+        setProfile(profileData);
+        setAppointments(Array.isArray(aptsData) ? aptsData : []);
+        setPrescriptions(Array.isArray(rxData) ? rxData : []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const patientName = profile?.user?.name || "Loading...";
@@ -143,15 +103,15 @@ export default function PatientDashboard() {
           <StatCard
             icon={<Calendar className="w-6 h-6" />}
             label="Upcoming Appointments"
-            value={3}
-            trend="Next: May 12"
+            value={appointments.length}
+            trend="Total appointments"
             color="bg-cyan-500"
           />
           <StatCard
             icon={<FileText className="w-6 h-6" />}
             label="Active Prescriptions"
-            value={2}
-            trend="Updated Apr 28"
+            value={prescriptions.length}
+            trend="Total prescriptions"
             color="bg-blue-500"
           />
           <StatCard
@@ -164,8 +124,8 @@ export default function PatientDashboard() {
           <StatCard
             icon={<Clock className="w-6 h-6" />}
             label="Last Visit"
-            value="Apr 28"
-            trend="Dr. Emily Clarke"
+            value={appointments.length > 0 ? new Date(appointments[0].date).toLocaleDateString() : "N/A"}
+            trend={appointments.length > 0 ? appointments[0].doctorName : "N/A"}
             color="bg-purple-500"
           />
         </div>
@@ -233,41 +193,52 @@ export default function PatientDashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {upcomingAppointments.map((apt, index) => (
-                <div
-                  key={apt.id}
-                  className={`flex items-center gap-4 py-3 ${
-                    index !== upcomingAppointments.length - 1
-                      ? "border-b border-gray-100 dark:border-gray-700"
-                      : ""
-                  }`}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full ${apt.avatarColor} flex items-center justify-center font-semibold text-sm shrink-0`}
-                  >
-                    {apt.initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 dark:text-white text-sm truncate">
-                      {apt.doctor}
-                    </p>
-                    <p className="text-xs text-gray-400">{apt.specialty}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {apt.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {apt.time}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={apt.status === "Confirmed" ? "success" : "warning"}
-                  >
-                    {apt.status}
-                  </Badge>
+              {appointments.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                  No appointments found.
                 </div>
-              ))}
+              ) : (
+                appointments.slice(0, 3).map((apt, index) => {
+                  const initials = apt.doctorName?.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() || "DR";
+                  const avatarColor = "bg-cyan-100 text-cyan-700";
+                  
+                  return (
+                    <div
+                      key={apt.id}
+                      className={`flex items-center gap-4 py-3 ${
+                        index !== Math.min(appointments.length, 3) - 1
+                          ? "border-b border-gray-100 dark:border-gray-700"
+                          : ""
+                      }`}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center font-semibold text-sm shrink-0`}
+                      >
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 dark:text-white text-sm truncate">
+                          {apt.doctorName}
+                        </p>
+                        <p className="text-xs text-gray-400">{apt.doctorSpecialization}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> {new Date(apt.date).toLocaleDateString()}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {new Date(apt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={apt.status === "Confirmed" ? "success" : apt.status === "Cancelled" ? "danger" : "warning"}
+                      >
+                        {apt.status}
+                      </Badge>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -285,43 +256,63 @@ export default function PatientDashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {recentPrescriptions.map((rx, index) => (
-                <div
-                  key={rx.id}
-                  onClick={() =>
-                    router.push(`/patient-dashboard/prescriptions/${rx.id}`)
-                  }
-                  className={`py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors ${
-                    index !== recentPrescriptions.length - 1
-                      ? "border-b border-gray-100 dark:border-gray-700"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-white text-sm">
-                        {rx.diagnosis}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {rx.doctor}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-400 shrink-0">
-                      {rx.date}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {rx.medicines.map((med) => (
-                      <span
-                        key={med}
-                        className="inline-flex items-center gap-1 text-xs bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-full"
-                      >
-                        <Pill className="w-3 h-3" /> {med}
-                      </span>
-                    ))}
-                  </div>
+              {prescriptions.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                  No prescriptions found.
                 </div>
-              ))}
+              ) : (
+                prescriptions.slice(0, 3).map((rx, index) => {
+                  let parsedMedicines = [];
+                  try {
+                    parsedMedicines = typeof rx.medicines === 'string' ? JSON.parse(rx.medicines) : rx.medicines;
+                  } catch (e) {
+                    parsedMedicines = [];
+                  }
+
+                  return (
+                    <div
+                      key={rx.id}
+                      onClick={() =>
+                        router.push(`/patient-dashboard/prescriptions/${rx.id}`)
+                      }
+                      className={`py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors ${
+                        index !== Math.min(prescriptions.length, 3) - 1
+                          ? "border-b border-gray-100 dark:border-gray-700"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <p className="font-medium text-gray-800 dark:text-white text-sm">
+                            {rx.diagnosis}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {rx.doctor?.name}
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-400 shrink-0">
+                          {new Date(rx.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.isArray(parsedMedicines) && parsedMedicines.slice(0, 2).map((med: any, i: number) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 text-xs bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-full"
+                          >
+                            <Pill className="w-3 h-3" /> {med.name || "Medicine"}
+                          </span>
+                        ))}
+                        {Array.isArray(parsedMedicines) && parsedMedicines.length > 2 && (
+                          <span className="inline-flex items-center gap-1 text-xs bg-gray-50 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">
+                            +{parsedMedicines.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
