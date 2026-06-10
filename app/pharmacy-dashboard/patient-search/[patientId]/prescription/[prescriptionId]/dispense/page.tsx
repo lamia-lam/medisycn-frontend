@@ -316,7 +316,7 @@ export default function PrescriptionDispensing() {
                       key={medicine.id}
                       className={`${
                         medicine.selected
-                          ? "bg-blue-50/50 dark:bg-blue-900/10"
+                          ? "bg-cyan-50/50 dark:bg-blue-900/10"
                           : ""
                       } hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors`}
                     >
