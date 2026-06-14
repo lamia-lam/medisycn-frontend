@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { DashboardLayout } from "../../components/DashboardLayout";
 import { Badge } from "../../components/Badge";
@@ -37,113 +40,92 @@ const sidebarItems = [
   },
 ];
 
-const medicinesData = [
-  {
-    id: 1,
-    name: "Paracetamol",
-    genericName: "Acetaminophen",
-    category: "Analgesic",
-    stockQty: 450,
-    status: "In Stock",
-    expiryDate: "2027-12-31",
-  },
-  {
-    id: 2,
-    name: "Amoxicillin",
-    genericName: "Amoxicillin Trihydrate",
-    category: "Antibiotic",
-    stockQty: 23,
-    status: "Low Stock",
-    expiryDate: "2027-08-15",
-  },
-  {
-    id: 3,
-    name: "Ibuprofen",
-    genericName: "Ibuprofen",
-    category: "Analgesic",
-    stockQty: 380,
-    status: "In Stock",
-    expiryDate: "2028-03-20",
-  },
-  {
-    id: 4,
-    name: "Metformin",
-    genericName: "Metformin Hydrochloride",
-    category: "Antidiabetic",
-    stockQty: 0,
-    status: "Out of Stock",
-    expiryDate: "2027-06-30",
-  },
-  {
-    id: 5,
-    name: "Omeprazole",
-    genericName: "Omeprazole",
-    category: "Antacid",
-    stockQty: 12,
-    status: "Low Stock",
-    expiryDate: "2027-11-10",
-  },
-  {
-    id: 6,
-    name: "Amlodipine",
-    genericName: "Amlodipine Besylate",
-    category: "Antihypertensive",
-    stockQty: 200,
-    status: "In Stock",
-    expiryDate: "2028-01-25",
-  },
-  {
-    id: 7,
-    name: "Atenolol",
-    genericName: "Atenolol",
-    category: "Antihypertensive",
-    stockQty: 45,
-    status: "Low Stock",
-    expiryDate: "2027-09-18",
-  },
-  {
-    id: 8,
-    name: "Aspirin",
-    genericName: "Acetylsalicylic Acid",
-    category: "Antiplatelet",
-    stockQty: 150,
-    status: "In Stock",
-    expiryDate: "2028-05-12",
-  },
-  {
-    id: 9,
-    name: "Cetirizine",
-    genericName: "Cetirizine Hydrochloride",
-    category: "Antihistamine",
-    stockQty: 320,
-    status: "In Stock",
-    expiryDate: "2027-10-08",
-  },
-  {
-    id: 10,
-    name: "Azithromycin",
-    genericName: "Azithromycin",
-    category: "Antibiotic",
-    stockQty: 8,
-    status: "Low Stock",
-    expiryDate: "2027-07-22",
-  },
-];
+type Medicine = {
+  id: number;
+  name: string;
+  genericName: string;
+  category: string;
+  stockQty: number;
+  status: string;
+  expiryDate: string;
+};
+
+type InventoryStats = {
+  total: number;
+  inStock: number;
+  lowStock: number;
+  outOfStock: number;
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 export default function MedicineInventory() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-
-  const filteredMedicines = medicinesData.filter((medicine) => {
-    const matchesSearch =
-      medicine.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      medicine.genericName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      medicine.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" ||
-      medicine.status.toLowerCase().replace(/ /g, "-") === filterStatus;
-    return matchesSearch && matchesStatus;
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [stats, setStats] = useState<InventoryStats>({
+    total: 0,
+    inStock: 0,
+    lowStock: 0,
+    outOfStock: 0,
   });
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchInventory = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "50",
+    });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (filterStatus !== "all") params.set("status", filterStatus);
+
+    try {
+      const res = await fetch(`/api/pharmacy/inventory?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to load inventory");
+        return;
+      }
+
+      setMedicines(data.medicines);
+      setStats(data.stats);
+      setPagination(data.pagination);
+    } catch {
+      setError("Failed to load inventory");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, filterStatus]);
+
+  useEffect(() => {
+    fetchInventory();
+  }, [fetchInventory]);
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -174,17 +156,19 @@ export default function MedicineInventory() {
     }
   };
 
-  const totalMedicines = medicinesData.length;
-  const inStock = medicinesData.filter((m) => m.status === "In Stock").length;
-  const lowStock = medicinesData.filter((m) => m.status === "Low Stock").length;
-  const outOfStock = medicinesData.filter(
-    (m) => m.status === "Out of Stock",
-  ).length;
+  if (loading && medicines.length === 0) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
+        <div className="flex h-[80vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-1">
             Medicine Inventory
@@ -194,9 +178,13 @@ export default function MedicineInventory() {
           </p>
         </div>
 
-        {/* Summary Cards */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total */}
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -207,11 +195,10 @@ export default function MedicineInventory() {
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-800 dark:text-white">
-              {totalMedicines}
+              {stats.total}
             </p>
           </div>
 
-          {/* In Stock */}
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -222,11 +209,10 @@ export default function MedicineInventory() {
               </div>
             </div>
             <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-              {inStock}
+              {stats.inStock}
             </p>
           </div>
 
-          {/* Low Stock */}
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -237,11 +223,10 @@ export default function MedicineInventory() {
               </div>
             </div>
             <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-              {lowStock}
+              {stats.lowStock}
             </p>
           </div>
 
-          {/* Out of Stock */}
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -252,14 +237,12 @@ export default function MedicineInventory() {
               </div>
             </div>
             <p className="text-3xl font-bold text-red-600 dark:text-red-400">
-              {outOfStock}
+              {stats.outOfStock}
             </p>
           </div>
         </div>
 
-        {/* Table Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-          {/* Search + Filter */}
           <div className="flex flex-col lg:flex-row gap-3 mb-5">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -275,7 +258,10 @@ export default function MedicineInventory() {
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-11 pr-10 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent appearance-none cursor-pointer text-sm text-gray-700 dark:text-gray-300 min-w-[180px] transition-all"
               >
                 <option value="all">All Status</option>
@@ -286,17 +272,26 @@ export default function MedicineInventory() {
             </div>
           </div>
 
-          {/* Result count */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Showing{" "}
             <span className="font-semibold text-cyan-600">
-              {filteredMedicines.length}
+              {medicines.length}
             </span>{" "}
-            of {totalMedicines} medicines
+            of {pagination.total} medicines
+            {pagination.totalPages > 1 && (
+              <span>
+                {" "}
+                (page {pagination.page} of {pagination.totalPages})
+              </span>
+            )}
           </p>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto relative">
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center z-10 rounded-lg">
+                <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+              </div>
+            )}
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/40 rounded-lg">
@@ -321,7 +316,7 @@ export default function MedicineInventory() {
                 </tr>
               </thead>
               <tbody>
-                {filteredMedicines.map((medicine, index) => {
+                {medicines.map((medicine, index) => {
                   const statusInfo = getStatusInfo(medicine.status);
                   const StatusIcon = statusInfo.icon;
 
@@ -329,7 +324,7 @@ export default function MedicineInventory() {
                     <tr
                       key={medicine.id}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${
-                        index !== filteredMedicines.length - 1
+                        index !== medicines.length - 1
                           ? "border-b border-gray-100 dark:border-gray-700"
                           : ""
                       }`}
@@ -369,8 +364,7 @@ export default function MedicineInventory() {
             </table>
           </div>
 
-          {/* Empty State */}
-          {filteredMedicines.length === 0 && (
+          {medicines.length === 0 && !loading && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
                 <Package className="w-8 h-8 text-gray-300 dark:text-gray-500" />
@@ -381,6 +375,32 @@ export default function MedicineInventory() {
               <p className="text-sm text-gray-400 dark:text-gray-500">
                 Try adjusting your search or filter
               </p>
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.page <= 1 || loading}
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setPage((p) => Math.min(pagination.totalPages, p + 1))
+                }
+                disabled={pagination.page >= pagination.totalPages || loading}
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>
