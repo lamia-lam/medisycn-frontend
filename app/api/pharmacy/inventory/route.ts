@@ -3,6 +3,27 @@ import { prisma } from "@/app/lib/prisma";
 import { getPharmacy } from "@/app/lib/auth";
 import { getStockStatus, statusToSlug } from "@/app/lib/inventory";
 
+function formatMedicine(m: {
+  id: number;
+  name: string;
+  genericName: string;
+  category: string;
+  stockQty: number;
+  lowStockThreshold: number;
+  expiryDate: Date;
+}) {
+  return {
+    id: m.id,
+    name: m.name,
+    genericName: m.genericName,
+    category: m.category,
+    stockQty: m.stockQty,
+    lowStockThreshold: m.lowStockThreshold,
+    status: getStockStatus(m.stockQty, m.lowStockThreshold),
+    expiryDate: m.expiryDate.toISOString().split("T")[0],
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { error } = await getPharmacy(req);
@@ -29,16 +50,7 @@ export async function GET(req: NextRequest) {
         : {}),
     });
 
-    const formatted = medicines.map((m) => ({
-      id: m.id,
-      name: m.name,
-      genericName: m.genericName,
-      category: m.category,
-      stockQty: m.stockQty,
-      lowStockThreshold: m.lowStockThreshold,
-      status: getStockStatus(m.stockQty, m.lowStockThreshold),
-      expiryDate: m.expiryDate.toISOString().split("T")[0],
-    }));
+    const formatted = medicines.map(formatMedicine);
 
     const filtered =
       status === "all"
@@ -81,6 +93,67 @@ export async function GET(req: NextRequest) {
     console.error("[GET /api/pharmacy/inventory]", err);
     return NextResponse.json(
       { error: "Failed to fetch inventory" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { error } = await getPharmacy(req);
+    if (error) return error;
+
+    const body = await req.json();
+    const { name, genericName, category, stockQty, lowStockThreshold, expiryDate } =
+      body;
+
+    if (!name?.trim() || !genericName?.trim() || !category?.trim() || !expiryDate) {
+      return NextResponse.json(
+        { error: "Name, generic name, category, and expiry date are required" },
+        { status: 400 },
+      );
+    }
+
+    const qty = stockQty !== undefined && stockQty !== "" ? parseInt(String(stockQty), 10) : 0;
+    if (isNaN(qty) || qty < 0) {
+      return NextResponse.json(
+        { error: "Stock quantity must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+
+    const threshold =
+      lowStockThreshold !== undefined && lowStockThreshold !== ""
+        ? parseInt(String(lowStockThreshold), 10)
+        : 50;
+    if (isNaN(threshold) || threshold < 0) {
+      return NextResponse.json(
+        { error: "Low stock threshold must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+
+    const parsedExpiry = new Date(expiryDate);
+    if (isNaN(parsedExpiry.getTime())) {
+      return NextResponse.json({ error: "Invalid expiry date" }, { status: 400 });
+    }
+
+    const medicine = await prisma.medicine.create({
+      data: {
+        name: name.trim(),
+        genericName: genericName.trim(),
+        category: category.trim(),
+        stockQty: qty,
+        lowStockThreshold: threshold,
+        expiryDate: parsedExpiry,
+      },
+    });
+
+    return NextResponse.json(formatMedicine(medicine), { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/pharmacy/inventory]", err);
+    return NextResponse.json(
+      { error: "Failed to create medicine" },
       { status: 500 },
     );
   }

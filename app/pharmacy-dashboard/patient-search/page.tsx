@@ -8,13 +8,13 @@ import {
   Package,
   History,
   User,
-  Phone,
   Calendar,
   FileText,
   Eye,
+  Stethoscope,
+  Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "../../components/DashboardLayout";
-import { Badge } from "../../components/Badge";
 
 const sidebarItems = [
   {
@@ -39,141 +39,138 @@ const sidebarItems = [
   },
 ];
 
-const patientsData = [
-  {
-    id: "P001",
-    name: "John Doe",
-    initials: "JD",
-    phone: "+1 (555) 123-4567",
-    age: 45,
-    gender: "Male",
-    bloodGroup: "A+",
-    lastVisit: "2026-05-20",
-    totalPrescriptions: 8,
-  },
-  {
-    id: "P002",
-    name: "Jane Smith",
-    initials: "JS",
-    phone: "+1 (555) 234-5678",
-    age: 32,
-    gender: "Female",
-    bloodGroup: "B+",
-    lastVisit: "2026-05-18",
-    totalPrescriptions: 5,
-  },
-  {
-    id: "P003",
-    name: "Mike Johnson",
-    initials: "MJ",
-    phone: "+1 (555) 345-6789",
-    age: 28,
-    gender: "Male",
-    bloodGroup: "O+",
-    lastVisit: "2026-05-15",
-    totalPrescriptions: 3,
-  },
-  {
-    id: "P004",
-    name: "Sarah Williams",
-    initials: "SW",
-    phone: "+1 (555) 456-7890",
-    age: 55,
-    gender: "Female",
-    bloodGroup: "AB+",
-    lastVisit: "2026-05-12",
-    totalPrescriptions: 12,
-  },
-  {
-    id: "P005",
-    name: "Robert Brown",
-    initials: "RB",
-    phone: "+1 (555) 567-8901",
-    age: 62,
-    gender: "Male",
-    bloodGroup: "A-",
-    lastVisit: "2026-05-10",
-    totalPrescriptions: 15,
-  },
-  {
-    id: "P006",
-    name: "Emily Davis",
-    initials: "ED",
-    phone: "+1 (555) 678-9012",
-    age: 38,
-    gender: "Female",
-    bloodGroup: "O-",
-    lastVisit: "2026-05-08",
-    totalPrescriptions: 7,
-  },
-];
+type PatientResult = {
+  id: number;
+  displayId: string;
+  name: string;
+  initials: string;
+  age: number | null;
+  gender: string | null;
+  bloodGroup: string | null;
+  doctorName: string;
+  lastVisit: string;
+  totalPrescriptions: number;
+};
 
 export default function PatientSearch() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState(patientsData);
+  const [phoneQuery, setPhoneQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim() === "") {
-      setSearchResults(patientsData);
-    } else {
-      const filtered = patientsData.filter(
-        (patient) =>
-          patient.name.toLowerCase().includes(query.toLowerCase()) ||
-          patient.phone.includes(query),
-      );
-      setSearchResults(filtered);
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    const query = phoneQuery.trim();
+    if (!query) {
+      setError("Please enter a patient phone number");
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setHasSearched(true);
+
+    try {
+      const params = new URLSearchParams({ phone: query });
+      const res = await fetch(`/api/pharmacy/patients/search?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to search patients");
+        setSearchResults([]);
+        return;
+      }
+
+      setSearchResults(data.patients ?? []);
+    } catch {
+      setError("Failed to search patients");
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-1">
             Patient Search
           </h2>
           <p className="text-gray-500 dark:text-gray-400">
-            Search patients by name or phone number to view their prescriptions
+            Search by patient phone number to view their prescriptions
           </p>
         </div>
 
-        {/* Search + Results */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-          {/* Search Bar */}
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by patient name or phone number..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-base transition-all"
-            />
-          </div>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                inputMode="tel"
+                placeholder="Enter patient phone number..."
+                value={phoneQuery}
+                onChange={(e) => setPhoneQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-base transition-all"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60 text-white px-6 py-3.5 rounded-xl font-medium transition-colors shadow-sm shrink-0"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Search className="w-5 h-5" />
+              )}
+              Search
+            </button>
+          </form>
 
-          {/* Result count */}
-          {searchQuery && (
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm mb-4">
+              {error}
+            </div>
+          )}
+
+          {hasSearched && !loading && searchResults.length > 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Found{" "}
               <span className="font-semibold text-cyan-600">
                 {searchResults.length}
               </span>{" "}
-              patient(s) matching &quot;{searchQuery}&quot;
+              patient(s)
             </p>
           )}
 
-          {/* Patient Cards Grid */}
-          {searchResults.length > 0 ? (
+          {!hasSearched && !loading && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-300 dark:text-gray-500" />
+              </div>
+              <p className="font-medium text-gray-600 dark:text-gray-300 mb-1">
+                Search for a patient
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                Enter the patient&apos;s phone number and click Search
+              </p>
+            </div>
+          )}
+
+          {hasSearched && !loading && searchResults.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {searchResults.map((patient) => (
                 <div
                   key={patient.id}
                   className="bg-gray-50/70 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md hover:border-cyan-200 dark:hover:border-cyan-800/50 transition-all duration-200"
                 >
-                  {/* Patient Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-base shrink-0">
@@ -184,26 +181,28 @@ export default function PatientSearch() {
                           {patient.name}
                         </p>
                         <p className="text-sm text-gray-400 dark:text-gray-500">
-                          {patient.id}
+                          {patient.displayId}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800/40">
-                      {patient.bloodGroup}
-                    </span>
+                    {patient.bloodGroup && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800/40">
+                        {patient.bloodGroup}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Patient Details Grid */}
                   <div className="grid grid-cols-2 gap-y-2.5 gap-x-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span className="truncate">{patient.phone}</span>
-                    </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <User className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>
-                        {patient.age} yrs, {patient.gender}
+                        {patient.age != null ? `${patient.age} yrs` : "—"}
+                        {patient.gender ? `, ${patient.gender}` : ""}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Stethoscope className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="truncate">{patient.doctorName}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
@@ -215,7 +214,6 @@ export default function PatientSearch() {
                     </div>
                   </div>
 
-                  {/* CTA Button */}
                   <button
                     onClick={() =>
                       router.push(
@@ -230,17 +228,18 @@ export default function PatientSearch() {
                 </div>
               ))}
             </div>
-          ) : (
-            /* Empty State */
+          )}
+
+          {hasSearched && !loading && searchResults.length === 0 && !error && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-gray-300 dark:text-gray-500" />
               </div>
               <p className="font-medium text-gray-600 dark:text-gray-300 mb-1">
-                No patients found
+                No patient found
               </p>
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                Try searching with a different name or phone number
+                Check the phone number and try again
               </p>
             </div>
           )}

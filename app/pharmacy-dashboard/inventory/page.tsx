@@ -13,9 +13,12 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  X,
 } from "lucide-react";
 import { DashboardLayout } from "../../components/DashboardLayout";
 import { Badge } from "../../components/Badge";
+import { AutocompleteInput } from "../../components/AutocompleteInput";
 
 const sidebarItems = [
   {
@@ -46,6 +49,7 @@ type Medicine = {
   genericName: string;
   category: string;
   stockQty: number;
+  lowStockThreshold: number;
   status: string;
   expiryDate: string;
 };
@@ -63,6 +67,38 @@ type Pagination = {
   total: number;
   totalPages: number;
 };
+
+type MedicineFormData = {
+  name: string;
+  genericName: string;
+  category: string;
+  stockQty: string;
+  addStockQty: string;
+  lowStockThreshold: string;
+  expiryDate: string;
+};
+
+const emptyForm: MedicineFormData = {
+  name: "",
+  genericName: "",
+  category: "",
+  stockQty: "",
+  addStockQty: "",
+  lowStockThreshold: "50",
+  expiryDate: "",
+};
+
+function medicineToForm(medicine: Medicine): MedicineFormData {
+  return {
+    name: medicine.name,
+    genericName: medicine.genericName,
+    category: medicine.category,
+    stockQty: String(medicine.stockQty),
+    addStockQty: "",
+    lowStockThreshold: String(medicine.lowStockThreshold),
+    expiryDate: medicine.expiryDate,
+  };
+}
 
 export default function MedicineInventory() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +120,12 @@ export default function MedicineInventory() {
     total: 0,
     totalPages: 1,
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+  const [formData, setFormData] = useState<MedicineFormData>(emptyForm);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -127,6 +169,106 @@ export default function MedicineInventory() {
     fetchInventory();
   }, [fetchInventory]);
 
+  const openAddModal = () => {
+    setEditingMedicine(null);
+    setFormData(emptyForm);
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (medicine: Medicine) => {
+    setEditingMedicine(medicine);
+    setFormData(medicineToForm(medicine));
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingMedicine(null);
+    setFormData(emptyForm);
+    setFormError("");
+  };
+
+  const handleInputChange = (field: keyof MedicineFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setFormError("");
+
+    if (
+      !formData.name.trim() ||
+      !formData.genericName.trim() ||
+      !formData.category.trim() ||
+      !formData.expiryDate
+    ) {
+      setFormError("Please fill in all required fields");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      if (editingMedicine) {
+        const payload: Record<string, string | number> = {
+          name: formData.name.trim(),
+          genericName: formData.genericName.trim(),
+          category: formData.category.trim(),
+          lowStockThreshold: formData.lowStockThreshold,
+          expiryDate: formData.expiryDate,
+        };
+
+        if (formData.addStockQty.trim()) {
+          payload.addStockQty = formData.addStockQty;
+        } else {
+          payload.stockQty = formData.stockQty;
+        }
+
+        const res = await fetch(
+          `/api/pharmacy/inventory/${editingMedicine.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        const data = await res.json();
+        if (!res.ok) {
+          setFormError(data.error || "Failed to update medicine");
+          return;
+        }
+      } else {
+        const res = await fetch("/api/pharmacy/inventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            genericName: formData.genericName.trim(),
+            category: formData.category.trim(),
+            stockQty: formData.stockQty || "0",
+            lowStockThreshold: formData.lowStockThreshold || "50",
+            expiryDate: formData.expiryDate,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setFormError(data.error || "Failed to add medicine");
+          return;
+        }
+      }
+
+      closeModal();
+      await fetchInventory();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case "In Stock":
@@ -169,13 +311,22 @@ export default function MedicineInventory() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-1">
-            Medicine Inventory
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage and monitor your pharmacy inventory
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-1">
+              Medicine Inventory
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400">
+              Manage and monitor your pharmacy inventory
+            </p>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            Add Medicine
+          </button>
         </div>
 
         {error && (
@@ -323,7 +474,8 @@ export default function MedicineInventory() {
                   return (
                     <tr
                       key={medicine.id}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${
+                      onClick={() => openEditModal(medicine)}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${
                         index !== medicines.length - 1
                           ? "border-b border-gray-100 dark:border-gray-700"
                           : ""
@@ -405,6 +557,198 @@ export default function MedicineInventory() {
           )}
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                  {editingMedicine ? "Edit Medicine" : "Add New Medicine"}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {editingMedicine
+                    ? "Update medicine details or restock with a new batch."
+                    : "Fill in the details below to add a medicine to inventory."}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {formError && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                  {formError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AutocompleteInput
+                  label="Medicine Name"
+                  required
+                  field="name"
+                  minChars={1}
+                  placeholder="e.g. Paracetamol 500mg Tablet"
+                  value={formData.name}
+                  onChange={(v) => handleInputChange("name", v)}
+                  onSelectMedicine={(item) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      name: item.name,
+                      genericName: item.genericName,
+                      category: item.category,
+                    }));
+                  }}
+                />
+
+                <AutocompleteInput
+                  label="Generic Name"
+                  required
+                  field="genericName"
+                  minChars={1}
+                  placeholder="e.g. Acetaminophen 500mg"
+                  value={formData.genericName}
+                  onChange={(v) => handleInputChange("genericName", v)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AutocompleteInput
+                  label="Category"
+                  required
+                  field="category"
+                  minChars={0}
+                  placeholder="Select or enter category"
+                  value={formData.category}
+                  onChange={(v) => handleInputChange("category", v)}
+                />
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Low Stock Threshold
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="50"
+                    value={formData.lowStockThreshold}
+                    onChange={(e) =>
+                      handleInputChange("lowStockThreshold", e.target.value)
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                  />
+                </div>
+              </div>
+
+              {editingMedicine ? (
+                <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Stock Management
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Current stock:{" "}
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">
+                      {editingMedicine.stockQty} units
+                    </span>
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Set Stock Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Override total stock"
+                        value={formData.stockQty}
+                        onChange={(e) =>
+                          handleInputChange("stockQty", e.target.value)
+                        }
+                        disabled={!!formData.addStockQty.trim()}
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400 disabled:opacity-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Add Stock (New Batch)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Units to add"
+                        value={formData.addStockQty}
+                        onChange={(e) =>
+                          handleInputChange("addStockQty", e.target.value)
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.stockQty}
+                    onChange={(e) =>
+                      handleInputChange("stockQty", e.target.value)
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Expiry Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.expiryDate}
+                  onChange={(e) =>
+                    handleInputChange("expiryDate", e.target.value)
+                  }
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
+                />
+                {editingMedicine && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Update this when adding a new batch with a different expiry
+                    date.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+              <button
+                onClick={closeModal}
+                disabled={saving}
+                className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editingMedicine ? "Save Changes" : "Add Medicine"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
