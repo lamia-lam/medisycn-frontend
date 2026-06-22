@@ -5,6 +5,7 @@ import { LogOut, X, Menu } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { DoctorProfileDrawer } from "./DoctorProfileDrawer";
 import { PatientProfileDrawer } from "./PatientProfileDrawer";
+import { PharmacyProfileDrawer } from "./PharmacyProfileDrawer";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -166,6 +167,11 @@ export function DashboardLayout({
 
       {userRole?.toLowerCase() === "patient" ? (
         <PatientProfileDrawer
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      ) : userRole?.toLowerCase() === "pharmacy" ? (
+        <PharmacyProfileDrawer
           isOpen={isProfileOpen}
           onClose={() => setIsProfileOpen(false)}
         />

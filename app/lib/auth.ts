@@ -66,6 +66,7 @@ export async function getPharmacy(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
+    include: { pharmacy: true },
   });
 
   if (!user) {

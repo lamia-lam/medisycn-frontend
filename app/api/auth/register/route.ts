@@ -58,6 +58,15 @@ export async function POST(req: Request) {
       });
     }
 
+    // Auto-create pharmacy profile
+    if (normalizedRole === "PHARMACY") {
+      await prisma.pharmacy.create({
+        data: {
+          userId: user.id,
+        },
+      });
+    }
+
     return Response.json({
       success: true,
       user,

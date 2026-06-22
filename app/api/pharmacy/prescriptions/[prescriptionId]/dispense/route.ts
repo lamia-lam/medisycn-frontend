@@ -6,6 +6,48 @@ type RouteContext = {
   params: Promise<{ prescriptionId: string }>;
 };
 
+type PrescribedMed = {
+  name?: string;
+  dosage?: string;
+  durationDays?: number | string;
+};
+
+function getRequiredQty(med: PrescribedMed): number {
+  const durationDays =
+    typeof med.durationDays === "number"
+      ? med.durationDays
+      : parseInt(String(med.durationDays), 10) || 0;
+  const dosageStr = med.dosage ?? "";
+  const timesPerDay = dosageStr
+    .split("+")
+    .reduce((sum, part) => sum + (parseFloat(part) || 0), 0);
+  return timesPerDay > 0 && durationDays > 0
+    ? Math.ceil(timesPerDay * durationDays)
+    : 0;
+}
+
+function computeDispenseStatus(
+  rawMedicines: PrescribedMed[],
+  validItems: Array<{ name: string; qtyToDeduct: number }>,
+): "Completed" | "Partial" {
+  if (rawMedicines.length === 0) return "Partial";
+
+  for (const med of rawMedicines) {
+    const medName = med.name?.trim().toLowerCase() ?? "";
+    const dispensed = validItems.find(
+      (item) => item.name.trim().toLowerCase() === medName,
+    );
+    if (!dispensed) return "Partial";
+
+    const requiredQty = getRequiredQty(med);
+    if (requiredQty > 0 && dispensed.qtyToDeduct < requiredQty) {
+      return "Partial";
+    }
+  }
+
+  return "Completed";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/pharmacy/prescriptions/[prescriptionId]/dispense
 //
@@ -201,6 +243,24 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    const prescription = await prisma.prescription.findUnique({
+      where: { id: prescriptionId },
+      select: { patientId: true, medicines: true },
+    });
+
+    if (!prescription) {
+      return NextResponse.json(
+        { error: "Prescription not found" },
+        { status: 404 },
+      );
+    }
+
+    const rawMedicines = Array.isArray(prescription.medicines)
+      ? (prescription.medicines as PrescribedMed[])
+      : [];
+
+    const status = computeDispenseStatus(rawMedicines, validItems);
+
     // ── Run all stock deductions in one atomic transaction ───────────────────
     const updatedMedicines = await prisma.$transaction(async (tx) => {
       const results = [];
@@ -216,10 +276,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
         const newStock = Math.max(0, current.stockQty - item.qtyToDeduct);
 
-        let status: "In Stock" | "Low Stock" | "Out of Stock";
-        if (newStock === 0) status = "Out of Stock";
-        else if (newStock < current.lowStockThreshold) status = "Low Stock";
-        else status = "In Stock";
+        let stockStatus: "In Stock" | "Low Stock" | "Out of Stock";
+        if (newStock === 0) stockStatus = "Out of Stock";
+        else if (newStock < current.lowStockThreshold) stockStatus = "Low Stock";
+        else stockStatus = "In Stock";
 
         const updated = await tx.medicine.update({
           where: { id: item.inventoryId },
@@ -233,9 +293,18 @@ export async function POST(req: NextRequest, context: RouteContext) {
           previousStock: current.stockQty,
           deducted: item.qtyToDeduct,
           newStockQty: updated.stockQty,
-          status,
+          status: stockStatus,
         });
       }
+
+      await tx.dispenseRecord.create({
+        data: {
+          prescriptionId,
+          patientId: prescription.patientId,
+          medicinesDispensed: results.length,
+          status,
+        },
+      });
 
       return results;
     });

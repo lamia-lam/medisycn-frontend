@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Search,
@@ -8,7 +8,9 @@ import {
   History,
   Filter,
   FileText,
-  Eye,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { DashboardLayout } from "../../components/DashboardLayout";
 import { Badge } from "../../components/Badge";
@@ -36,116 +38,93 @@ const sidebarItems = [
   },
 ];
 
-const historyData = [
-  {
-    id: "DH001",
-    prescriptionId: "RX001",
-    patientName: "John Doe",
-    initials: "JD",
-    prescriptionDate: "2026-05-20",
-    processedDate: "2026-05-20",
-    pharmacistName: "Sarah Johnson",
-    medicinesDispensed: 4,
-    status: "Completed",
-  },
-  {
-    id: "DH002",
-    prescriptionId: "RX002",
-    patientName: "Jane Smith",
-    initials: "JS",
-    prescriptionDate: "2026-05-18",
-    processedDate: "2026-05-19",
-    pharmacistName: "Michael Brown",
-    medicinesDispensed: 3,
-    status: "Completed",
-  },
-  {
-    id: "DH003",
-    prescriptionId: "RX003",
-    patientName: "Mike Johnson",
-    initials: "MJ",
-    prescriptionDate: "2026-05-15",
-    processedDate: "2026-05-16",
-    pharmacistName: "Sarah Johnson",
-    medicinesDispensed: 4,
-    status: "Partial",
-  },
-  {
-    id: "DH004",
-    prescriptionId: "RX004",
-    patientName: "Sarah Williams",
-    initials: "SW",
-    prescriptionDate: "2026-05-12",
-    processedDate: "2026-05-13",
-    pharmacistName: "Michael Brown",
-    medicinesDispensed: 2,
-    status: "Completed",
-  },
-  {
-    id: "DH005",
-    prescriptionId: "RX005",
-    patientName: "Robert Brown",
-    initials: "RB",
-    prescriptionDate: "2026-05-10",
-    processedDate: "2026-05-11",
-    pharmacistName: "Sarah Johnson",
-    medicinesDispensed: 5,
-    status: "Completed",
-  },
-  {
-    id: "DH006",
-    prescriptionId: "RX006",
-    patientName: "Emily Davis",
-    initials: "ED",
-    prescriptionDate: "2026-05-08",
-    processedDate: "2026-05-09",
-    pharmacistName: "Michael Brown",
-    medicinesDispensed: 3,
-    status: "Completed",
-  },
-  {
-    id: "DH007",
-    prescriptionId: "RX007",
-    patientName: "David Wilson",
-    initials: "DW",
-    prescriptionDate: "2026-05-06",
-    processedDate: "2026-05-07",
-    pharmacistName: "Sarah Johnson",
-    medicinesDispensed: 6,
-    status: "Completed",
-  },
-  {
-    id: "DH008",
-    prescriptionId: "RX008",
-    patientName: "Lisa Anderson",
-    initials: "LA",
-    prescriptionDate: "2026-05-04",
-    processedDate: "2026-05-05",
-    pharmacistName: "Michael Brown",
-    medicinesDispensed: 2,
-    status: "Partial",
-  },
-];
+type HistoryRecord = {
+  id: number;
+  prescriptionId: string;
+  patientName: string;
+  initials: string;
+  prescriptionDate: string;
+  processedDate: string;
+  medicinesDispensed: number;
+  status: string;
+};
+
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 export default function DispensingHistory() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-
-  const filteredHistory = historyData.filter((record) => {
-    const matchesSearch =
-      record.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.prescriptionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.pharmacistName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" ||
-      record.status.toLowerCase() === filterStatus;
-    return matchesSearch && matchesStatus;
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [records, setRecords] = useState<HistoryRecord[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
   });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "50",
+    });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (filterStatus !== "all") params.set("status", filterStatus);
+
+    try {
+      const res = await fetch(`/api/pharmacy/history?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to load dispensing history");
+        return;
+      }
+
+      setRecords(data.records);
+      setPagination(data.pagination);
+    } catch {
+      setError("Failed to load dispensing history");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, filterStatus]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  if (loading && records.length === 0) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
+        <div className="flex h-[80vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-1">
             Dispensing History
@@ -155,15 +134,19 @@ export default function DispensingHistory() {
           </p>
         </div>
 
-        {/* Table Card */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-          {/* Search + Filter */}
           <div className="flex flex-col lg:flex-row gap-3 mb-5">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by patient name, prescription ID, or pharmacist..."
+                placeholder="Search by patient name or prescription ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm transition-all"
@@ -173,7 +156,10 @@ export default function DispensingHistory() {
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-11 pr-10 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent appearance-none cursor-pointer text-sm text-gray-700 dark:text-gray-300 min-w-[180px] transition-all"
               >
                 <option value="all">All Status</option>
@@ -183,16 +169,14 @@ export default function DispensingHistory() {
             </div>
           </div>
 
-          {/* Result count */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Showing{" "}
             <span className="font-semibold text-cyan-600">
-              {filteredHistory.length}
+              {records.length}
             </span>{" "}
-            of {historyData.length} records
+            of {pagination.total} records
           </p>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -210,30 +194,23 @@ export default function DispensingHistory() {
                     Processed Date
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
-                    Pharmacist
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
                     Medicines
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
-                    Status
-                  </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400 rounded-r-lg">
-                    Actions
+                    Status
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredHistory.map((record, index) => (
+                {records.map((record, index) => (
                   <tr
                     key={record.id}
                     className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${
-                      index !== filteredHistory.length - 1
+                      index !== records.length - 1
                         ? "border-b border-gray-100 dark:border-gray-700"
                         : ""
                     }`}
                   >
-                    {/* Prescription ID */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-gray-400 shrink-0" />
@@ -243,7 +220,6 @@ export default function DispensingHistory() {
                       </div>
                     </td>
 
-                    {/* Patient Name */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-xs shrink-0">
@@ -255,29 +231,23 @@ export default function DispensingHistory() {
                       </div>
                     </td>
 
-                    {/* Prescription Date */}
                     <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {record.prescriptionDate}
                     </td>
 
-                    {/* Processed Date */}
                     <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {record.processedDate}
                     </td>
 
-                    {/* Pharmacist */}
-                    <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {record.pharmacistName}
-                    </td>
-
-                    {/* Medicines Dispensed */}
                     <td className="px-4 py-4">
                       <Badge variant="default">
-                        {record.medicinesDispensed} medicines
+                        {record.medicinesDispensed}{" "}
+                        {record.medicinesDispensed === 1
+                          ? "medicine"
+                          : "medicines"}
                       </Badge>
                     </td>
 
-                    {/* Status */}
                     <td className="px-4 py-4">
                       <Badge
                         variant={
@@ -287,24 +257,13 @@ export default function DispensingHistory() {
                         {record.status}
                       </Badge>
                     </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-4">
-                      <button
-                        title="View details"
-                        className="p-2 rounded-lg text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 dark:hover:text-cyan-400 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Empty State */}
-          {filteredHistory.length === 0 && (
+          {records.length === 0 && !loading && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
                 <History className="w-8 h-8 text-gray-300 dark:text-gray-500" />
@@ -313,8 +272,40 @@ export default function DispensingHistory() {
                 No dispensing records found
               </p>
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                Try adjusting your search or filter
+                {pagination.total === 0
+                  ? "Records will appear here after prescriptions are dispensed"
+                  : "Try adjusting your search or filter"}
               </p>
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Page {pagination.page} of {pagination.totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.page <= 1 || loading}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setPage((p) => Math.min(pagination.totalPages, p + 1))
+                  }
+                  disabled={
+                    pagination.page >= pagination.totalPages || loading
+                  }
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

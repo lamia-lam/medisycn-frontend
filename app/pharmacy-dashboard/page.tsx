@@ -15,6 +15,7 @@ import {
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatCard } from "../components/StatCard";
 import { Badge } from "../components/Badge";
+import { useEffect, useState } from "react";
 
 const sidebarItems = [
   {
@@ -39,83 +40,64 @@ const sidebarItems = [
   },
 ];
 
-const lowStockMedicines = [
-  { name: "Paracetamol 500mg", quantity: 45, threshold: 100 },
-  { name: "Amoxicillin 250mg", quantity: 23, threshold: 50 },
-  { name: "Ibuprofen 400mg", quantity: 38, threshold: 100 },
-  { name: "Metformin 500mg", quantity: 15, threshold: 75 },
-  { name: "Omeprazole 20mg", quantity: 12, threshold: 50 },
-];
-
-const recentPrescriptions = [
-  {
-    id: "RX001",
-    patientName: "John Doe",
-    initials: "JD",
-    doctorName: "Dr. Sarah Wilson",
-    time: "10 mins ago",
-    medicines: 4,
-    status: "Processed",
-  },
-  {
-    id: "RX002",
-    patientName: "Jane Smith",
-    initials: "JS",
-    doctorName: "Dr. Michael Chen",
-    time: "25 mins ago",
-    medicines: 3,
-    status: "Processed",
-  },
-  {
-    id: "RX003",
-    patientName: "Mike Johnson",
-    initials: "MJ",
-    doctorName: "Dr. Emily Davis",
-    time: "1 hour ago",
-    medicines: 5,
-    status: "Partial",
-  },
-  {
-    id: "RX004",
-    patientName: "Sarah Williams",
-    initials: "SW",
-    doctorName: "Dr. Robert Brown",
-    time: "2 hours ago",
-    medicines: 2,
-    status: "Processed",
-  },
-];
-
-const recentPatients = [
-  { name: "John Doe", initials: "JD", time: "10 mins ago", prescriptions: 4 },
-  { name: "Jane Smith", initials: "JS", time: "25 mins ago", prescriptions: 3 },
-  {
-    name: "Mike Johnson",
-    initials: "MJ",
-    time: "1 hour ago",
-    prescriptions: 5,
-  },
-  {
-    name: "Sarah Williams",
-    initials: "SW",
-    time: "2 hours ago",
-    prescriptions: 2,
-  },
-  {
-    name: "Robert Brown",
-    initials: "RB",
-    time: "3 hours ago",
-    prescriptions: 6,
-  },
-];
+function getRelativeTime(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hours ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays} days ago`;
+}
 
 export default function PharmacyDashboard() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const res = await fetch("/api/pharmacy/dashboard");
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  if (loading) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const { stats, recentPrescriptions, lowStockMedicines, recentPatients } = data || {
+    stats: { prescriptionsProcessed: 0, lowStockMedicines: 0, totalMedicines: 0, outOfStock: 0, patientsServed: 0 },
+    recentPrescriptions: [],
+    lowStockMedicines: [],
+    recentPatients: []
+  };
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
@@ -133,37 +115,37 @@ export default function PharmacyDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             label="Prescriptions Processed"
-            value="24"
+            value={stats.prescriptionsProcessed.toString()}
             icon={<FileText className="w-6 h-6" />}
-            trend="+12% today"
+            trend="Today"
             color="bg-blue-500"
           />
           <StatCard
             label="Low Stock Medicines"
-            value="5"
+            value={stats.lowStockMedicines.toString()}
             icon={<AlertTriangle className="w-6 h-6" />}
             trend="Need restock"
             color="bg-yellow-500"
           />
           <StatCard
             label="Total Medicines"
-            value="342"
+            value={stats.totalMedicines.toString()}
             icon={<Package className="w-6 h-6" />}
             trend="In inventory"
             color="bg-teal-500"
           />
           <StatCard
             label="Out of Stock"
-            value="3"
+            value={stats.outOfStock.toString()}
             icon={<PackageOpen className="w-6 h-6" />}
             trend="Medicines"
             color="bg-red-500"
           />
           <StatCard
             label="Patients Served"
-            value="18"
+            value={stats.patientsServed.toString()}
             icon={<Users className="w-6 h-6" />}
-            trend="+8% today"
+            trend="Today"
             color="bg-green-500"
           />
         </div>
@@ -179,50 +161,54 @@ export default function PharmacyDashboard() {
               <TrendingUp className="w-5 h-5 text-gray-400" />
             </div>
             <div className="space-y-3">
-              {recentPrescriptions.map((prescription) => (
-                <div
-                  key={prescription.id}
-                  className="flex items-center justify-between p-4 bg-gray-50/70 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-sm shrink-0">
-                      {prescription.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <p className="font-semibold text-gray-800 dark:text-white">
-                          {prescription.patientName}
+              {recentPrescriptions.length === 0 ? (
+                <p className="text-sm text-gray-500">No recent prescriptions processed.</p>
+              ) : (
+                recentPrescriptions.map((prescription: any) => (
+                  <div
+                    key={prescription.id}
+                    className="flex items-center justify-between p-4 bg-gray-50/70 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-sm shrink-0">
+                        {prescription.initials}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <p className="font-semibold text-gray-800 dark:text-white">
+                            {prescription.patientName}
+                          </p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium">
+                            {prescription.id}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          Prescribed by {prescription.doctorName}
                         </p>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium">
-                          {prescription.id}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-1.5">
+                        {prescription.medicines} medicines
+                      </p>
+                      <div className="flex items-center justify-end gap-2">
+                        <Badge
+                          variant={
+                            prescription.status === "Processed" || prescription.status === "Completed"
+                              ? "success"
+                              : "default"
+                          }
+                        >
+                          {prescription.status}
+                        </Badge>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {getRelativeTime(prescription.time)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        Prescribed by {prescription.doctorName}
-                      </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0 ml-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-1.5">
-                      {prescription.medicines} medicines
-                    </p>
-                    <div className="flex items-center justify-end gap-2">
-                      <Badge
-                        variant={
-                          prescription.status === "Processed"
-                            ? "success"
-                            : "default"
-                        }
-                      >
-                        {prescription.status}
-                      </Badge>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {prescription.time}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -235,34 +221,38 @@ export default function PharmacyDashboard() {
               <AlertTriangle className="w-5 h-5 text-yellow-500" />
             </div>
             <div className="space-y-3">
-              {lowStockMedicines.map((medicine, index) => (
-                <div
-                  key={index}
-                  className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800/50"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                      {medicine.name}
-                    </p>
-                    <Badge variant="danger">Low</Badge>
+              {lowStockMedicines.length === 0 ? (
+                <p className="text-sm text-gray-500">No low stock medicines.</p>
+              ) : (
+                lowStockMedicines.map((medicine: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                        {medicine.name}
+                      </p>
+                      <Badge variant="danger">Low</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>Remaining: {medicine.quantity}</span>
+                      <span>Min: {medicine.threshold}</span>
+                    </div>
+                    <div className="w-full bg-yellow-200 dark:bg-yellow-900/50 rounded-full h-1.5">
+                      <div
+                        className="bg-yellow-500 h-1.5 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(
+                            (medicine.quantity / medicine.threshold) * 100,
+                            100,
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    <span>Remaining: {medicine.quantity}</span>
-                    <span>Min: {medicine.threshold}</span>
-                  </div>
-                  <div className="w-full bg-yellow-200 dark:bg-yellow-900/50 rounded-full h-1.5">
-                    <div
-                      className="bg-yellow-500 h-1.5 rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(
-                          (medicine.quantity / medicine.threshold) * 100,
-                          100,
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -294,37 +284,45 @@ export default function PharmacyDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentPatients.map((patient, index) => (
-                  <tr
-                    key={index}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${index !== recentPatients.length - 1
-                        ? "border-b border-gray-100 dark:border-gray-700"
-                        : ""
-                      }`}
-                  >
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-sm shrink-0">
-                          {patient.initials}
-                        </div>
-                        <span className="font-medium text-gray-800 dark:text-white">
-                          {patient.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-gray-700 dark:text-gray-300">
-                      {patient.prescriptions}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
-                      {patient.time}
-                    </td>
-                    <td className="px-4 py-4">
-                      <button className="text-sm text-cyan-600 hover:text-cyan-700 hover:underline font-medium transition-colors">
-                        View Details
-                      </button>
+                {recentPatients.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-4 text-sm text-gray-500 text-center">
+                      No recent patient activity.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  recentPatients.map((patient: any, index: number) => (
+                    <tr
+                      key={index}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${index !== recentPatients.length - 1
+                          ? "border-b border-gray-100 dark:border-gray-700"
+                          : ""
+                        }`}
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-semibold text-sm shrink-0">
+                            {patient.initials}
+                          </div>
+                          <span className="font-medium text-gray-800 dark:text-white">
+                            {patient.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-gray-700 dark:text-gray-300">
+                        {patient.prescriptions}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {getRelativeTime(patient.time)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <button className="text-sm text-cyan-600 hover:text-cyan-700 hover:underline font-medium transition-colors">
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -333,3 +331,4 @@ export default function PharmacyDashboard() {
     </DashboardLayout>
   );
 }
+

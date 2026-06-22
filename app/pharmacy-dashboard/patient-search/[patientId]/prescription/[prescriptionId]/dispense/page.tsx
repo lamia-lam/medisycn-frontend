@@ -84,11 +84,23 @@ interface DispenseData {
 const getStockStatus = (status: PrescribedMedicine["status"]) => {
   switch (status) {
     case "In Stock":
-      return { variant: "success" as const, icon: CheckCircle2, color: "text-green-600" };
+      return {
+        variant: "success" as const,
+        icon: CheckCircle2,
+        color: "text-green-600",
+      };
     case "Low Stock":
-      return { variant: "default" as const, icon: AlertTriangle, color: "text-yellow-600" };
+      return {
+        variant: "default" as const,
+        icon: AlertTriangle,
+        color: "text-yellow-600",
+      };
     case "Out of Stock":
-      return { variant: "danger" as const, icon: XCircle, color: "text-red-600" };
+      return {
+        variant: "danger" as const,
+        icon: XCircle,
+        color: "text-red-600",
+      };
   }
 };
 
@@ -129,9 +141,8 @@ function ConfirmDispenseModal({
             Are you sure you want to dispense{" "}
             <span className="font-semibold text-gray-700 dark:text-gray-200">
               {count} medicine{count !== 1 ? "s" : ""}
-            </span>?
-            <br />
-            Stock will be updated in the inventory.
+            </span>
+            ?
           </p>
         </div>
 
@@ -234,12 +245,10 @@ export default function PrescriptionDispensing() {
         }
         setData(json as DispenseData);
         setMedicines(
-          json.medicines.map(
-            (med: Omit<PrescribedMedicine, "selected">) => ({
-              ...med,
-              selected: med.status !== "Out of Stock",
-            }),
-          ),
+          json.medicines.map((med: Omit<PrescribedMedicine, "selected">) => ({
+            ...med,
+            selected: med.status !== "Out of Stock",
+          })),
         );
       } catch {
         setFetchError("Failed to load prescription. Please try again.");
@@ -395,13 +404,10 @@ export default function PrescriptionDispensing() {
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
-
         {/* Confirmation Modal */}
         {showConfirm && data && (
           <ConfirmDispenseModal
-            medicines={selectedMedicines}
-            patient={data.patient}
-            prescription={data.prescription}
+            count={selectedMedicines.length}
             onConfirm={handleConfirmDispense}
             onCancel={() => setShowConfirm(false)}
             loading={dispensing}
@@ -461,7 +467,9 @@ export default function PrescriptionDispensing() {
               <div>
                 <p className="text-blue-100 mb-1 text-sm">Patient</p>
                 <p className="font-semibold text-lg">{data.patient.name}</p>
-                <p className="text-sm text-blue-100">{data.patient.displayId}</p>
+                <p className="text-sm text-blue-100">
+                  {data.patient.displayId}
+                </p>
               </div>
               <div>
                 <p className="text-blue-100 mb-1 text-sm">Doctor</p>
@@ -472,7 +480,9 @@ export default function PrescriptionDispensing() {
               </div>
               <div>
                 <p className="text-blue-100 mb-1 text-sm">Date</p>
-                <p className="font-semibold text-lg">{data.prescription.date}</p>
+                <p className="font-semibold text-lg">
+                  {data.prescription.date}
+                </p>
                 {data.prescription.diagnosis && (
                   <p className="text-sm text-blue-100 mt-0.5 truncate">
                     {data.prescription.diagnosis}

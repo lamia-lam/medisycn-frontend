@@ -25,7 +25,18 @@ model User {
   createdAt DateTime @default(now())
 
   doctor  Doctor?
-patient Patient?
+  patient Patient?
+  pharmacy Pharmacy?
+}
+
+model Pharmacy {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  license   String?
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Doctor {
@@ -65,6 +76,7 @@ model Patient {
   appointments  Appointment[]
   histories     MedicalHistory[]
   reports       DiagnosticReport[]  // ← ADD
+  dispenseRecords DispenseRecord[]
 }
 
 model DoctorPatient {
@@ -109,6 +121,7 @@ model Prescription {
 
   doctor  Doctor  @relation(fields: [doctorId], references: [id])
   patient Patient @relation(fields: [patientId], references: [id])
+  dispenseRecords DispenseRecord[]
 }
 
 model DiagnosticReport {
@@ -148,4 +161,16 @@ model Medicine {
   expiryDate        DateTime
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model DispenseRecord {
+  id                 Int      @id @default(autoincrement())
+  prescriptionId     Int
+  patientId          Int
+  medicinesDispensed Int
+  status             String
+  dispensedAt        DateTime @default(now())
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+  patient      Patient      @relation(fields: [patientId], references: [id])
 }
