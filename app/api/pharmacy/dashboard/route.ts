@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
       const initials = patientName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       
       return {
+        recordId: record.id,
         id: `RX${record.prescriptionId.toString().padStart(3, '0')}`,
         patientName,
         initials,
