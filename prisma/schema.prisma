@@ -129,8 +129,10 @@ model DiagnosticReport {
   patientId      Int
   prescriptionId Int?
   testName       String
-  findings       String
+  testIndex      Int      @default(0)
+  findings       String   @default("")
   reportUrl      String?
+  status         String   @default("In_Progress")
   createdAt      DateTime @default(now())
 
   patient Patient @relation(fields: [patientId], references: [id])

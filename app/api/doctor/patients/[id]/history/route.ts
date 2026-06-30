@@ -32,7 +32,7 @@ export async function GET(
 
     // Fetch prescriptions for this patient ordered by newest first
     const prescriptions = await prisma.prescription.findMany({
-      where: { patientId },
+      where: { patientId, doctorId: doctor!.id },
       include: {
         doctor: {
           include: {
@@ -43,7 +43,21 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ patient, prescriptions });
+    // Fetch diagnostic reports for this patient
+    const reports = await prisma.diagnosticReport.findMany({
+      where: { patientId },
+    });
+
+    // Attach reports to prescriptions
+    const prescriptionsWithReports = prescriptions.map((rx) => {
+      const rxReports = reports.filter((r) => r.prescriptionId === rx.id);
+      return {
+        ...rx,
+        reports: rxReports,
+      };
+    });
+
+    return NextResponse.json({ patient, prescriptions: prescriptionsWithReports });
   } catch (err) {
     console.error("[GET /api/doctor/patients/[id]/history]", err);
     return NextResponse.json(

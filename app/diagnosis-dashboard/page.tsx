@@ -44,58 +44,20 @@ type RecentRequest = {
   priority: "Normal" | "Urgent";
 };
 
-// Mock data
-const mockData = {
-  centerName: "MediSync Diagnostics Center",
+type DashboardData = {
+  centerName: string;
   stats: {
-    totalRequestsToday: 42,
-    pendingReports: 15,
-    completedToday: 27,
-    avgTurnaroundTime: "4.5 hrs",
-  },
-  recentRequests: [
-    {
-      id: "REQ-001",
-      patient: "John Doe",
-      test: "Complete Blood Count (CBC)",
-      doctor: "Dr. Sarah Smith",
-      time: "10:30 AM",
-      status: "In Progress",
-      priority: "Normal",
-    },
-    {
-      id: "REQ-002",
-      patient: "Jane Smith",
-      test: "Lipid Profile",
-      doctor: "Dr. Michael Chen",
-      time: "11:15 AM",
-      status: "Pending",
-      priority: "Urgent",
-    },
-    {
-      id: "REQ-003",
-      patient: "Robert Brown",
-      test: "Liver Function Test (LFT)",
-      doctor: "Dr. Emily Davis",
-      time: "09:00 AM",
-      status: "Completed",
-      priority: "Normal",
-    },
-    {
-      id: "REQ-004",
-      patient: "Mike Johnson",
-      test: "Blood Glucose (Fasting)",
-      doctor: "Dr. Sarah Smith",
-      time: "08:45 AM",
-      status: "Completed",
-      priority: "Normal",
-    },
-  ] as RecentRequest[],
+    totalRequestsToday: number;
+    pendingReports: number;
+    completedToday: number;
+  };
+  recentRequests: RecentRequest[];
 };
 
 export default function DiagnosisDashboard() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(mockData);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -105,12 +67,25 @@ export default function DiagnosisDashboard() {
   });
 
   useEffect(() => {
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      setData(mockData);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch("/api/diagnostic/dashboard");
+        if (response.ok) {
+          const dashboardData = await response.json();
+          setData(dashboardData);
+        } else {
+          console.error("Failed to fetch dashboard data");
+          setError("Failed to fetch dashboard data");
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setError("Error connecting to server");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   if (loading) {
@@ -121,6 +96,20 @@ export default function DiagnosisDashboard() {
         </div>
       </DashboardLayout>
     );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Diagnostic">
+        <div className="flex h-[80vh] items-center justify-center">
+          <div className="text-red-500 font-semibold">{error}</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!data) {
+    return null;
   }
 
   const getStatusBadge = (status: string) => {
