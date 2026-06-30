@@ -33,6 +33,7 @@ export function DoctorProfileDrawer({
     newPassword: "",
     confirmPassword: "",
     avatar: "",
+    qualifications: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,6 +58,7 @@ export function DoctorProfileDrawer({
           designation: data.designation || "",
           specialization: data.specialization || "",
           department: data.department || "",
+          qualifications: data.qualifications || "",
           license: data.license || "",
           avatar: data.avatar || "",
         }));
@@ -78,6 +80,7 @@ export function DoctorProfileDrawer({
           designation: formData.designation,
           specialization: formData.specialization,
           department: formData.department,
+          qualifications: formData.qualifications,
           license: formData.license,
           avatar: formData.avatar,
         }),
@@ -213,6 +216,19 @@ export function DoctorProfileDrawer({
                     setFormData({ ...formData, specialization: e.target.value })
                   }
                   className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Qualifications</label>
+                <input
+                  type="text"
+                  value={formData.qualifications}
+                  onChange={(e) =>
+                    setFormData({ ...formData, qualifications: e.target.value })
+                  }
+                  className={inputClass}
+                  placeholder="e.g. MBBS, FCPS"
                 />
               </div>
 

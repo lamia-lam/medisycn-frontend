@@ -46,6 +46,7 @@ model Doctor {
   specialization String?
   department     String?
   designation    String?
+  qualifications String?
   license        String?
   avatar         String?
 

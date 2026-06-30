@@ -61,7 +61,7 @@ export async function PUT(req: Request) {
     };
 
     const body = await req.json();
-    const { designation, specialization, department, license, avatar } = body;
+    const { designation, specialization, department, qualifications, license, avatar } = body;
 
     const doctor = await prisma.doctor.update({
       where: {
@@ -71,6 +71,7 @@ export async function PUT(req: Request) {
         designation,
         specialization,
         department,
+        qualifications,
         license,
         avatar,
       },

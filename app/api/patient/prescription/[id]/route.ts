@@ -84,6 +84,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       createdAt: prescription.createdAt,
       doctor: {
           name: prescription.doctor.user.name,
+          designation: prescription.doctor.designation,
+          department: prescription.doctor.department,
+          qualifications: prescription.doctor.qualifications,
           specialization: prescription.doctor.specialization,
           license: prescription.doctor.license,
           phone: prescription.doctor.user.phone

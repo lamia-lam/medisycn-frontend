@@ -62,6 +62,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
       },
       doctor: {
         name: prescription.doctor.user.name,
+        designation: prescription.doctor.designation,
+        qualifications: prescription.doctor.qualifications,
         specialization: prescription.doctor.specialization,
         department: prescription.doctor.department,
         license: prescription.doctor.license,
