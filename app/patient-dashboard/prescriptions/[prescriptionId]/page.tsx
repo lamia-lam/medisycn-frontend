@@ -18,6 +18,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import { PrescriptionDocument } from "../../../components/PrescriptionDocument";
 
 const sidebarItems = [
   { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/patient-dashboard" },
@@ -60,6 +61,9 @@ export default function PatientPrescriptionViewer() {
           },
           doctor: {
             name: data.doctor.name,
+            designation: data.doctor.designation || undefined,
+            department: data.doctor.department || undefined,
+            qualifications: data.doctor.qualifications || undefined,
             specialization: data.doctor.specialization || "Doctor",
             license: data.doctor.license || "-",
             phone: data.doctor.phone || "-",
@@ -185,235 +189,7 @@ export default function PatientPrescriptionViewer() {
               transition: "transform 0.15s ease",
             }}
           >
-            {/* A4-proportioned document */}
-            <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-sm border border-gray-300">
-              <div className="p-10">
-                {/* Letterhead */}
-                <div className="text-center mb-8 pb-6 border-b-2 border-cyan-600">
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-cyan-600 rounded-xl mb-3">
-                    <span className="text-xl font-bold text-white">MS</span>
-                  </div>
-                  <h1 className="text-2xl font-bold text-cyan-600 mb-1">
-                    {rx.hospital.name}
-                  </h1>
-                  <p className="text-sm text-gray-500">{rx.hospital.address}</p>
-                  <p className="text-sm text-gray-500">
-                    Phone: {rx.hospital.phone} &nbsp;|&nbsp; {rx.hospital.website}
-                  </p>
-                </div>
-
-                {/* Document Title */}
-                <div className="text-center mb-8">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">
-                    Medical Prescription
-                  </p>
-                  <h2 className="text-xl font-bold text-gray-800">{rx.diagnosis}</h2>
-                  <p className="text-sm text-gray-400 font-mono mt-1">{rx.id}</p>
-                </div>
-
-                {/* Doctor & Patient Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-7">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Prescribing Doctor
-                    </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-1">
-                      <p className="font-semibold text-gray-800">{rx.doctor.name}</p>
-                      <p className="text-sm text-cyan-600">{rx.doctor.specialization}</p>
-                      <p className="text-sm text-gray-500">License: {rx.doctor.license}</p>
-                      <p className="text-sm text-gray-500">Phone: {rx.doctor.phone}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Patient Information
-                    </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-1">
-                      <p className="font-semibold text-gray-800">{rx.patient.name}</p>
-                      <p className="text-sm text-gray-500">ID: #{rx.patient.id}</p>
-                      <p className="text-sm text-gray-500">
-                        {rx.patient.age} years · {rx.patient.gender}
-                      </p>
-                      <p className="text-sm text-gray-500">{rx.patient.phone}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Date & ID */}
-                <div className="grid grid-cols-2 gap-5 mb-7">
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <p className="text-xs text-gray-400 mb-1">Date Issued</p>
-                    <p className="font-medium text-gray-800">{rx.date}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <p className="text-xs text-gray-400 mb-1">Prescription ID</p>
-                    <p className="font-mono font-medium text-gray-800">{rx.id}</p>
-                  </div>
-                </div>
-
-                {/* Diagnosis */}
-                <div className="border-t border-gray-200 pt-6 mb-7">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Diagnosis
-                  </p>
-                  <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
-                    <p className="text-gray-800 font-medium">{rx.diagnosis}</p>
-                  </div>
-                </div>
-
-                {/* Symptoms */}
-                <div className="border-t border-gray-100 pt-6 mb-7">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Presenting Symptoms
-                  </p>
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <p className="text-gray-700 text-sm leading-relaxed">{rx.symptoms}</p>
-                  </div>
-                </div>
-
-                {/* Prescribed Medications */}
-                <div className="border-t border-gray-100 pt-6 mb-7">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
-                    Prescribed Medications
-                  </p>
-                  <div className="space-y-4">
-                    {rx.medicines.map((medicine: any, index: number) => (
-                      <div
-                        key={index}
-                        className="border border-gray-200 rounded-xl overflow-hidden"
-                      >
-                        {/* Medicine Header */}
-                        <div className="flex items-center justify-between px-5 py-4 bg-gray-50">
-                          <div>
-                            <p className="font-semibold text-gray-800">
-                              {index + 1}.&nbsp;{medicine.name}{" "}
-                              <span className="text-cyan-600">{medicine.strength}</span>
-                            </p>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              {medicine.dosage} · {medicine.frequency} · {medicine.timing}
-                            </p>
-                          </div>
-                          <span className="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium whitespace-nowrap">
-                            {medicine.duration}
-                          </span>
-                        </div>
-
-                        {/* Instructions */}
-                        <div className="px-5 py-3 border-t border-gray-100 flex items-start gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium text-gray-700">Instructions: </span>
-                            {medicine.instructions}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Diagnostic Tests */}
-                {rx.tests && rx.tests.length > 0 && (
-                  <div className="border-t border-gray-100 pt-6 mb-7">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Microscope className="w-4 h-4 text-orange-500" />
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                        Diagnostic Tests Ordered
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      {rx.tests.map((test: any, index: number) => (
-                        <div
-                          key={index}
-                          className="border border-orange-200 rounded-xl overflow-hidden"
-                        >
-                          <div className="flex items-center justify-between px-5 py-3 bg-orange-50">
-                            <div>
-                              <p className="font-semibold text-gray-800 text-sm">
-                                {index + 1}.&nbsp;{test.name}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">{test.type}</p>
-                            </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                test.urgency === "STAT (Immediate)"
-                                  ? "bg-red-100 text-red-700"
-                                  : test.urgency === "Urgent"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              {test.urgency}
-                            </span>
-                          </div>
-                          {test.instructions && (
-                            <div className="px-5 py-3 border-t border-orange-100 flex items-start gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
-                              <p className="text-sm text-gray-600">
-                                <span className="font-medium text-gray-700">Instructions: </span>
-                                {test.instructions}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Additional Notes */}
-                <div className="border-t border-gray-100 pt-6 mb-7">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Additional Notes
-                  </p>
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <p className="text-gray-700 text-sm leading-relaxed">{rx.notes}</p>
-                  </div>
-                </div>
-
-                {/* Follow-up */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 mb-7">
-                  <Calendar className="w-5 h-5 text-blue-500 shrink-0" />
-                  <p className="text-sm text-blue-800">
-                    <span className="font-semibold">Follow-up Appointment: </span>
-                    {rx.followUp}
-                  </p>
-                </div>
-
-                {/* Signature Row */}
-                <div className="pt-6 border-t border-gray-200 flex items-end justify-between gap-6">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-3">Authorized Signature</p>
-                    <div className="w-52 border-b-2 border-gray-300 pb-1 mb-2">
-                      <p className="text-2xl italic text-gray-700 font-serif">
-                        {rx.doctor.name}
-                      </p>
-                    </div>
-                    <p className="text-sm text-gray-500">{rx.doctor.name}</p>
-                    <p className="text-xs text-gray-400">{rx.doctor.specialization}</p>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-2 rounded-lg mb-3">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      <span className="text-sm font-medium text-green-700">
-                        Digitally Verified
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400">Generated: {rx.date}</p>
-                    <p className="text-xs text-gray-400">MediSync Health System</p>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-8 text-center text-xs text-gray-400 space-y-0.5 border-t border-gray-100 pt-4">
-                  <p>
-                    This is a computer-generated prescription and does not require a physical signature.
-                  </p>
-                  <p>Report generated on {rx.date}</p>
-                </div>
-              </div>
-            </div>
+            <PrescriptionDocument rx={rx} />
           </div>
         </div>
       </div>

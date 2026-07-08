@@ -61,6 +61,12 @@ interface Medicine {
   instructions: string;
 }
 
+interface AvailableMedicine {
+  id: number;
+  name: string;
+  genericName: string;
+}
+
 interface DiagnosticTest {
   name: string;
   urgency: string;
@@ -107,6 +113,8 @@ export default function NewPrescriptionPage() {
   const [symptoms, setSymptoms] = useState("");
   const [notes, setNotes] = useState("");
   const [medicines, setMedicines] = useState<Medicine[]>([defaultMedicine()]);
+  const [availableMedicines, setAvailableMedicines] = useState<AvailableMedicine[]>([]);
+  const [activeMedicineDropdown, setActiveMedicineDropdown] = useState<number | null>(null);
   const [tests, setTests] = useState<DiagnosticTest[]>([]);
 
   // ── Quick Register Modal State ───────────────────────────────────────────────
@@ -199,9 +207,25 @@ export default function NewPrescriptionPage() {
     const handleOutsideClick = () => {
       setShowNameDropdown(false);
       setShowPhoneDropdown(false);
+      setActiveMedicineDropdown(null);
     };
     window.addEventListener("click", handleOutsideClick);
     return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    async function fetchMedicines() {
+      try {
+        const res = await fetch("/api/doctor/medicines");
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableMedicines(data);
+        }
+      } catch (err) {
+        console.error("Failed to load medicines", err);
+      }
+    }
+    fetchMedicines();
   }, []);
 
   // ── Medicine helpers ─────────────────────────────────────────────────────────
@@ -629,18 +653,49 @@ export default function NewPrescriptionPage() {
                     )}
                   </div>
                   <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-2 relative">
                       <label className={labelClass}>Medicine Name</label>
                       <input
                         type="text"
                         value={medicine.name}
-                        onChange={(e) =>
-                          updateMedicine(index, "name", e.target.value)
-                        }
+                        onChange={(e) => {
+                          updateMedicine(index, "name", e.target.value);
+                          setActiveMedicineDropdown(index);
+                        }}
+                        onFocus={() => setActiveMedicineDropdown(index)}
                         placeholder="Medicine name"
                         className={inputClass}
                         required
                       />
+                      {activeMedicineDropdown === index && medicine.name && (
+                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {availableMedicines.filter((m) =>
+                            m.name.toLowerCase().includes(medicine.name.toLowerCase())
+                          ).length === 0 ? (
+                            <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                              Press enter to use custom medicine
+                            </div>
+                          ) : (
+                            availableMedicines
+                              .filter((m) =>
+                                m.name.toLowerCase().includes(medicine.name.toLowerCase())
+                              )
+                              .map((m) => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateMedicine(index, "name", m.name);
+                                    setActiveMedicineDropdown(null);
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-sm text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                >
+                                  {m.name} <span className="text-gray-400 text-xs ml-1">({m.genericName})</span>
+                                </button>
+                              ))
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className={labelClass}>Dosage</label>

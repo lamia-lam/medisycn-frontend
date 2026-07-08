@@ -264,7 +264,7 @@ export default function BookAppointment() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Patient Info Banner — real data from API */}
-          <div className="bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-r from-cyan-700 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
             <p className="text-xs font-semibold uppercase tracking-widest text-cyan-100 mb-4">
               Patient Information
             </p>

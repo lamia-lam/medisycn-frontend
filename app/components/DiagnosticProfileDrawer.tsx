@@ -3,40 +3,37 @@
 import { useState, useEffect } from "react";
 import {
   X,
-  User,
+  Microscope,
   Mail,
   Phone,
-  Building,
+  FileText,
   Lock,
   Upload,
   Save,
 } from "lucide-react";
 
-interface DoctorProfileDrawerProps {
+interface DiagnosticProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DoctorProfileDrawer({
+export function DiagnosticProfileDrawer({
   isOpen,
   onClose,
-}: DoctorProfileDrawerProps) {
+}: DiagnosticProfileDrawerProps) {
   const [formData, setFormData] = useState({
     name: "",
-    designation: "",
-    specialization: "",
-    department: "",
-    license: "",
     email: "",
     phone: "",
+    license: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
     avatar: "",
-    qualifications: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
 
   useEffect(() => {
     if (isOpen) {
@@ -47,7 +44,7 @@ export function DoctorProfileDrawer({
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/doctor/profile");
+      const res = await fetch("/api/diagnostic/profile");
       if (res.ok) {
         const data = await res.json();
         setFormData((prev) => ({
@@ -55,16 +52,12 @@ export function DoctorProfileDrawer({
           name: data.user?.name || "",
           email: data.user?.email || "",
           phone: data.user?.phone || "",
-          designation: data.designation || "",
-          specialization: data.specialization || "",
-          department: data.department || "",
-          qualifications: data.qualifications || "",
-          license: data.license || "",
-          avatar: data.avatar || "",
+          license: data.diagnostic?.license || "",
+          avatar: data.diagnostic?.avatar || "",
         }));
       }
     } catch (error) {
-      console.error("Failed to fetch profile", error);
+      console.error("Failed to fetch diagnostic profile", error);
     } finally {
       setLoading(false);
     }
@@ -73,30 +66,23 @@ export function DoctorProfileDrawer({
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/doctor/profile", {
+      const res = await fetch("/api/diagnostic/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          designation: formData.designation,
-          specialization: formData.specialization,
-          department: formData.department,
-          qualifications: formData.qualifications,
           license: formData.license,
           avatar: formData.avatar,
         }),
       });
       if (res.ok) {
-        // Handle success, maybe show a toast
         onClose();
       }
     } catch (error) {
-      console.error("Failed to save profile", error);
+      console.error("Failed to save diagnostic profile", error);
     } finally {
       setSaving(false);
     }
   };
-
-  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
 
   if (!isOpen) return null;
 
@@ -105,16 +91,29 @@ export function DoctorProfileDrawer({
   const labelClass =
     "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5";
 
+  const initials =
+    formData.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase() || "DX";
+
   return (
     <>
+      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] transition-opacity"
         onClick={onClose}
-      ></div>
+      />
+
+      {/* Drawer */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl z-[70] overflow-y-auto flex flex-col transition-transform transform translate-x-0">
-        <div className="sticky top-0 bg-gradient-to-r from-cyan-700 to-cyan-500 text-white p-6 border-b border-gray-200 dark:border-gray-700 z-10 shrink-0">
+
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-cyan-600 to-teal-500 text-white p-6 border-b border-gray-200 dark:border-gray-700 z-10 shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Doctor Profile</h2>
+            <h2 className="text-xl font-semibold">Diagnostic Profile</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -131,12 +130,7 @@ export function DoctorProfileDrawer({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                formData.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .substring(0, 2)
-                  .toUpperCase() || "DR"
+                initials
               )}
               <button className="absolute bottom-0 right-0 w-6 h-6 bg-white dark:bg-gray-800 text-cyan-600 dark:text-cyan-400 rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 transition-colors">
                 <Upload className="w-3 h-3" />
@@ -146,13 +140,12 @@ export function DoctorProfileDrawer({
               <h3 className="text-lg font-semibold mb-0.5">
                 {loading ? "Loading..." : formData.name}
               </h3>
-              <p className="text-sm text-white/90">
-                {formData.specialization || "Add specialization"}
-              </p>
+              <p className="text-sm text-white/90">Diagnostic Center</p>
             </div>
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-[152px] z-10 shrink-0">
           <button
             onClick={() => setActiveTab("profile")}
@@ -176,13 +169,17 @@ export function DoctorProfileDrawer({
           </button>
         </div>
 
+        {/* Body */}
         <div className="p-6 flex-1 bg-white dark:bg-gray-800">
+
+          {/* Profile Tab */}
           {activeTab === "profile" && (
             <div className="space-y-5">
+              {/* Diagnostic Center Name (read-only) */}
               <div>
-                <label className={labelClass}>Full Name</label>
+                <label className={labelClass}>Diagnostic Center Name</label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Microscope className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={formData.name}
@@ -195,70 +192,24 @@ export function DoctorProfileDrawer({
                 </p>
               </div>
 
+              {/* License Number (editable) */}
               <div>
-                <label className={labelClass}>Designation</label>
-                <input
-                  type="text"
-                  value={formData.designation}
-                  onChange={(e) =>
-                    setFormData({ ...formData, designation: e.target.value })
-                  }
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Specialization</label>
-                <input
-                  type="text"
-                  value={formData.specialization}
-                  onChange={(e) =>
-                    setFormData({ ...formData, specialization: e.target.value })
-                  }
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Qualifications</label>
-                <input
-                  type="text"
-                  value={formData.qualifications}
-                  onChange={(e) =>
-                    setFormData({ ...formData, qualifications: e.target.value })
-                  }
-                  className={inputClass}
-                  placeholder="e.g. MBBS, FCPS"
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Department</label>
+                <label className={labelClass}>License Number</label>
                 <div className="relative">
-                  <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.department}
+                    value={formData.license}
                     onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
+                      setFormData({ ...formData, license: e.target.value })
                     }
                     className={`${inputClass} pl-10`}
+                    placeholder="Enter diagnostic center license number"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className={labelClass}>Medical License</label>
-                <input
-                  type="text"
-                  value={formData.license}
-                  onChange={(e) =>
-                    setFormData({ ...formData, license: e.target.value })
-                  }
-                  className={inputClass}
-                />
-              </div>
-
+              {/* Email Address (read-only) */}
               <div>
                 <label className={labelClass}>Email Address</label>
                 <div className="relative">
@@ -275,6 +226,7 @@ export function DoctorProfileDrawer({
                 </p>
               </div>
 
+              {/* Phone Number (read-only) */}
               <div>
                 <label className={labelClass}>Phone Number</label>
                 <div className="relative">
@@ -291,6 +243,7 @@ export function DoctorProfileDrawer({
                 </p>
               </div>
 
+              {/* Save Button */}
               <div className="pt-2">
                 <button
                   onClick={handleSaveProfile}
@@ -304,6 +257,7 @@ export function DoctorProfileDrawer({
             </div>
           )}
 
+          {/* Password Tab */}
           {activeTab === "password" && (
             <div className="space-y-5">
               <div>
@@ -314,10 +268,7 @@ export function DoctorProfileDrawer({
                     type="password"
                     value={formData.currentPassword}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        currentPassword: e.target.value,
-                      })
+                      setFormData({ ...formData, currentPassword: e.target.value })
                     }
                     className={`${inputClass} pl-10`}
                     placeholder="••••••••"
@@ -349,10 +300,7 @@ export function DoctorProfileDrawer({
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        confirmPassword: e.target.value,
-                      })
+                      setFormData({ ...formData, confirmPassword: e.target.value })
                     }
                     className={`${inputClass} pl-10`}
                     placeholder="••••••••"

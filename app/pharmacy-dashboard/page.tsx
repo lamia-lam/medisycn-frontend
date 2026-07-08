@@ -166,7 +166,7 @@ export default function PharmacyDashboard() {
               ) : (
                 recentPrescriptions.map((prescription: any) => (
                   <div
-                    key={prescription.id}
+                    key={prescription.recordId}
                     className="flex items-center justify-between p-4 bg-gray-50/70 dark:bg-gray-900/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-shadow"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">

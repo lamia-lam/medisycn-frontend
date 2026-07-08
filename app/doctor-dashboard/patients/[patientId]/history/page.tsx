@@ -58,6 +58,7 @@ interface Prescription {
   symptoms?: string | null;
   medicines: Medicine[] | string[];
   tests?: unknown;
+  reports?: { id: number; testName: string; reportUrl: string | null; status: string; findings: string }[];
   notes?: string | null;
   createdAt: string;
   doctor: {
@@ -898,14 +899,60 @@ export default function PatientHistoryPage() {
                   </div>
                 )}
 
+              {/* Uploaded Reports */}
+              {recordsModal.reports && recordsModal.reports.length > 0 && (
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    Uploaded Reports
+                  </p>
+                  <div className="space-y-3">
+                    {recordsModal.reports.map((report) => (
+                      <div
+                        key={report.id}
+                        className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/40 p-3 rounded-lg border border-gray-100 dark:border-gray-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800 dark:text-white">
+                              {report.testName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Status: {report.status.replace("_", " ")}
+                            </p>
+                          </div>
+                        </div>
+                        {report.reportUrl ? (
+                          <a
+                            href={report.reportUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium bg-cyan-600 text-white px-3 py-1.5 rounded-lg hover:bg-cyan-700 transition-colors"
+                          >
+                            View Report
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">
+                            Pending Upload
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* No records notice */}
               {(!recordsModal.tests ||
                 !Array.isArray(recordsModal.tests) ||
-                (recordsModal.tests as unknown[]).length === 0) && (
+                (recordsModal.tests as unknown[]).length === 0) &&
+                (!recordsModal.reports || recordsModal.reports.length === 0) && (
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
                   <FolderOpen className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                   <p className="text-sm text-gray-400 dark:text-gray-500">
-                    No additional records attached to this prescription.
+                    No additional records or reports attached to this prescription.
                   </p>
                 </div>
               )}
