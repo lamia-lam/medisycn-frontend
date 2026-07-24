@@ -177,3 +177,61 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* ========== Prescription Print Helpers (fallback) ========== */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .dashboard-shell > aside,
+  .dashboard-shell > div > header,
+  .prescription-viewer-toolbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .dashboard-shell,
+  .dashboard-shell > div,
+  main,
+  main > div,
+  .prescription-document-viewer,
+  .prescription-zoom-wrapper {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+
+  .prescription-zoom-wrapper {
+    transform: none !important;
+  }
+
+  #prescription-card {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid;
+  }
+}

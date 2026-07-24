@@ -62,13 +62,26 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { age, gender, bloodGroup, condition, address, dateOfBirth } = body;
 
+    if (age === undefined || age === null || String(age).trim() === "") {
+      return Response.json({ error: "Age is required" }, { status: 400 });
+    }
+
+    if (!gender || String(gender).trim() === "") {
+      return Response.json({ error: "Gender is required" }, { status: 400 });
+    }
+
+    const parsedAge = parseInt(age);
+    if (isNaN(parsedAge)) {
+      return Response.json({ error: "Age must be a valid number" }, { status: 400 });
+    }
+
     const patient = await prisma.patient.update({
       where: {
         userId: decoded.id,
       },
       data: {
-        age: age ? parseInt(age) : undefined,
-        gender,
+        age: parsedAge,
+        gender: String(gender),
         bloodGroup,
         condition,
         address,

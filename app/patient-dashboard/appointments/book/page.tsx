@@ -47,6 +47,7 @@ interface Doctor {
   specialization: string | null;
   department: string | null;
   designation: string | null;
+  availability: any;
   user: { name: string };
 }
 
@@ -59,20 +60,7 @@ interface PatientInfo {
   patientId: string;
 }
 
-const timeSlots = [
-  "09:00 AM",
-  "09:30 AM",
-  "10:00 AM",
-  "10:30 AM",
-  "11:00 AM",
-  "11:30 AM",
-  "02:00 PM",
-  "02:30 PM",
-  "03:00 PM",
-  "03:30 PM",
-  "04:00 PM",
-  "04:30 PM",
-];
+// Time slots are now generated dynamically based on the doctor's schedule.
 
 const serviceTypes = [
   "General Checkup",
@@ -132,7 +120,7 @@ export default function BookAppointment() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // get all available doctors
     fetch("/api/doctor/list")
@@ -203,6 +191,65 @@ export default function BookAppointment() {
   const selectedDoctor = doctors.find(
     (d) => String(d.id) === String(formData.doctorId),
   );
+
+  let doctorSchedule: any[] = [];
+  if (selectedDoctor && selectedDoctor.availability) {
+    try {
+      doctorSchedule = typeof selectedDoctor.availability === "string"
+        ? JSON.parse(selectedDoctor.availability)
+        : selectedDoctor.availability;
+
+      if (!Array.isArray(doctorSchedule)) {
+        doctorSchedule = [];
+      }
+    } catch (e) {
+      doctorSchedule = [];
+    }
+  }
+
+  const format12Hour = (time24: string) => {
+    if (!time24) return "";
+    const [h, m] = time24.split(":");
+    const hours = parseInt(h, 10);
+    const suffix = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${m} ${suffix}`;
+  };
+
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  const generateTimeSlots = (start24: string, end24: string) => {
+    const slots = [];
+    let [h, m] = start24.split(":").map(Number);
+    const [eh, em] = end24.split(":").map(Number);
+    
+    let currentMinutes = h * 60 + m;
+    const endMinutes = eh * 60 + em;
+    
+    while (currentMinutes <= endMinutes - 30) {
+        const hh = Math.floor(currentMinutes / 60);
+        const mm = currentMinutes % 60;
+        const suffix = hh >= 12 ? "PM" : "AM";
+        const displayH = hh % 12 || 12;
+        slots.push(`${String(displayH).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${suffix}`);
+        currentMinutes += 30;
+    }
+    return slots;
+  };
+
+  let availableTimeSlots: string[] = [];
+  if (selectedDoctor && formData.date) {
+    const [year, month, day] = formData.date.split("-").map(Number);
+    if (year && month && day) {
+      const dateObj = new Date(year, month - 1, day);
+      const dayName = daysOfWeek[dateObj.getDay()];
+      
+      const dayAvailability = doctorSchedule.find((a: any) => a.day === dayName);
+      if (dayAvailability) {
+        availableTimeSlots = generateTimeSlots(dayAvailability.start, dayAvailability.end);
+      }
+    }
+  }
 
   // ── Success screen ───────────────────────────────────────
   if (submitted) {
@@ -375,6 +422,33 @@ export default function BookAppointment() {
                 </select>
               </div>
 
+              {/* Doctor Schedule Display */}
+              {selectedDoctor && (
+                <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-cyan-600 dark:text-cyan-400" />
+                    Doctor's Schedule
+                  </h4>
+                  {doctorSchedule.length > 0 ? (
+                    <>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                        {doctorSchedule.map((slot: any, idx: number) => (
+                          <li key={idx} className="flex items-center">
+                            <span className="w-24 font-medium text-gray-700 dark:text-gray-300">{slot.day}</span>
+                            <span>{format12Hour(slot.start)} - {format12Hour(slot.end)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-3 font-medium bg-cyan-50 dark:bg-cyan-900/20 py-1.5 px-3 rounded-md inline-block">
+                        Tip: Please pick a date that falls on one of these days.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-red-500">This doctor has not set any working hours.</p>
+                  )}
+                </div>
+              )}
+
               {/* Date & Service Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -428,20 +502,21 @@ export default function BookAppointment() {
                   )}
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
-                  {timeSlots.map((slot) => (
+                  {availableTimeSlots.length > 0 ? availableTimeSlots.map((slot) => (
                     <button
                       key={slot}
                       type="button"
                       onClick={() => setFormData({ ...formData, time: slot })}
-                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                        formData.time === slot
+                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${formData.time === slot
                           ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
                           : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/10"
-                      }`}
+                        }`}
                     >
                       {slot}
                     </button>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 col-span-full">No time slots available for the selected doctor.</p>
+                  )}
                 </div>
               </div>
 

@@ -38,6 +38,8 @@ export default function LoginPage() {
       router.replace("/diagnosis-dashboard");
     } else if (data.role === "PHARMACY" || data.role === "pharmacy") {
       router.replace("/pharmacy-dashboard");
+    } else if (data.role === "ADMIN" || data.role === "admin") {
+      router.replace("/admin-dashboard");
     } else {
       setError("Unknown role");
     }

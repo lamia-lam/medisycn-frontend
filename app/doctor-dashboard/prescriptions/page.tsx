@@ -21,10 +21,26 @@ import {
 import { useRouter } from "next/navigation";
 
 const sidebarItems = [
-  { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/doctor-dashboard" },
-  { icon: <Users className="w-5 h-5" />, label: "Patients", href: "/doctor-dashboard/patients" },
-  { icon: <FileText className="w-5 h-5" />, label: "Prescriptions", href: "/doctor-dashboard/prescriptions" },
-  { icon: <Calendar className="w-5 h-5" />, label: "Appointments", href: "/doctor-dashboard/appointments" },
+  {
+    icon: <Activity className="w-5 h-5" />,
+    label: "Dashboard",
+    href: "/doctor-dashboard",
+  },
+  {
+    icon: <Users className="w-5 h-5" />,
+    label: "Patients",
+    href: "/doctor-dashboard/patients",
+  },
+  {
+    icon: <FileText className="w-5 h-5" />,
+    label: "Prescriptions",
+    href: "/doctor-dashboard/prescriptions",
+  },
+  {
+    icon: <Calendar className="w-5 h-5" />,
+    label: "Appointments",
+    href: "/doctor-dashboard/appointments",
+  },
 ];
 
 export default function PrescriptionsPage() {
@@ -42,7 +58,7 @@ export default function PrescriptionsPage() {
         const res = await fetch("/api/doctor/prescription");
         if (!res.ok) throw new Error("Failed to load prescriptions");
         const data = await res.json();
-        
+
         // Map the backend data to the format used in the UI
         const mappedData = data.map((p: any) => {
           let medicinesCount = 0;
@@ -52,23 +68,28 @@ export default function PrescriptionsPage() {
 
           // Generate initials from patient name
           const initials = p.patient.name
-            ? p.patient.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
+            ? p.patient.name
+                .split(" ")
+                .map((n: string) => n[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase()
             : "?";
-            
+
           return {
             id: `RX-${p.id}`,
             realId: p.id,
             patient: p.patient.name,
-            patientId: `P${p.patient.id.toString().padStart(3, '0')}`,
-            date: new Date(p.createdAt).toISOString().split('T')[0],
+            patientId: `P${p.patient.id.toString().padStart(3, "0")}`,
+            phone: p.patient.phone,
+            date: new Date(p.createdAt).toISOString().split("T")[0],
             diagnosis: p.diagnosis,
             medicines: medicinesCount,
-            status: "Active", // Assuming all are active for now, as schema doesn't have status
             initials: initials,
             avatarColor: "bg-cyan-100 text-cyan-700", // Defaulting color, could be randomized
           };
         });
-        
+
         setPrescriptionsData(mappedData);
       } catch (err: any) {
         setError(err.message || "Something went wrong");
@@ -81,17 +102,13 @@ export default function PrescriptionsPage() {
 
   const filteredPrescriptions = prescriptionsData.filter((prescription) => {
     const matchesSearch =
-      prescription.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prescription.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prescription.diagnosis.toLowerCase().includes(searchQuery.toLowerCase());
+      (prescription.phone || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (prescription.patient || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       filterStatus === "all" ||
-      prescription.status.toLowerCase() === filterStatus;
+      (prescription.status || "").toLowerCase() === filterStatus;
     return matchesSearch && matchesStatus;
   });
-
-  const activeCount = prescriptionsData.filter((p) => p.status === "Active").length;
-  const completedCount = prescriptionsData.filter((p) => p.status === "Completed").length;
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
@@ -115,50 +132,6 @@ export default function PrescriptionsPage() {
           </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            {
-              label: "Total Prescriptions",
-              value: loading ? "-" : prescriptionsData.length,
-              color: "text-cyan-600",
-              bg: "bg-cyan-50 dark:bg-cyan-900/20",
-              icon: <FileText className="w-5 h-5 text-cyan-500" />,
-            },
-            {
-              label: "Active",
-              value: loading ? "-" : activeCount,
-              color: "text-green-600",
-              bg: "bg-green-50 dark:bg-green-900/20",
-              icon: <Pill className="w-5 h-5 text-green-500" />,
-            },
-            {
-              label: "Completed",
-              value: loading ? "-" : completedCount,
-              color: "text-gray-500",
-              bg: "bg-gray-50 dark:bg-gray-800",
-              icon: <FileText className="w-5 h-5 text-gray-400" />,
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`${stat.bg} rounded-xl p-4 flex items-center gap-4`}
-            >
-              <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm shrink-0">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
-                  {stat.label}
-                </p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Card Container */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           {/* Search & Filter */}
@@ -168,23 +141,11 @@ export default function PrescriptionsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by prescription ID, patient name, or diagnosis..."
+                  placeholder="Search by Phone or patient name"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
                 />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="pl-9 pr-8 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                </select>
               </div>
             </div>
             {!loading && !error && (
@@ -236,11 +197,6 @@ export default function PrescriptionsPage() {
                           </p>
                         </div>
                       </div>
-                      <Badge
-                        variant={prescription.status === "Active" ? "success" : "default"}
-                      >
-                        {prescription.status}
-                      </Badge>
                     </div>
 
                     {/* Details */}
@@ -252,7 +208,9 @@ export default function PrescriptionsPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm gap-4">
-                        <span className="text-gray-400 shrink-0">Diagnosis</span>
+                        <span className="text-gray-400 shrink-0">
+                          Diagnosis
+                        </span>
                         <span className="text-right font-medium text-gray-700 dark:text-gray-300 text-xs truncate max-w-[200px]">
                           {prescription.diagnosis}
                         </span>

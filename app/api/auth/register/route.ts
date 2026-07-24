@@ -4,7 +4,7 @@ import { Role } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, phone, password, role } = await req.json();
+    const { name, email, phone, password, role, license } = await req.json();
 
     const normalizedRole = String(role || "").toUpperCase() as Role;
 
@@ -29,6 +29,9 @@ export async function POST(req: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Determine status
+    const accountStatus = normalizedRole === "PATIENT" ? "APPROVED" : "PENDING";
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -37,6 +40,7 @@ export async function POST(req: Request) {
         phone,
         password: hashedPassword,
         role: normalizedRole,
+        status: accountStatus,
       },
     });
 
@@ -45,6 +49,7 @@ export async function POST(req: Request) {
       await prisma.doctor.create({
         data: {
           userId: user.id,
+          license: license || null,
         },
       });
     }
@@ -63,6 +68,17 @@ export async function POST(req: Request) {
       await prisma.pharmacy.create({
         data: {
           userId: user.id,
+          license: license || null,
+        },
+      });
+    }
+
+    // Auto-create diagnostic profile
+    if (normalizedRole === "DIAGNOSTIC") {
+      await prisma.diagnostic.create({
+        data: {
+          userId: user.id,
+          license: license || null,
         },
       });
     }

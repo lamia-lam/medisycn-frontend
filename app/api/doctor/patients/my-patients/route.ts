@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       include: {
         patient: {
           include: {
-            user: { select: { name: true, phone: true } },
+            user: { select: { name: true, phone: true, isOffline: true } },
           },
         },
       },

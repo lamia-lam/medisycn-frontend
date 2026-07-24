@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { PrescriptionDocument } from "../../../components/PrescriptionDocument";
+import { usePrescriptionExport } from "../../../hooks/usePrescriptionExport";
 
 const sidebarItems = [
   { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/patient-dashboard" },
@@ -30,13 +31,18 @@ const sidebarItems = [
 export default function PatientPrescriptionViewer() {
   const router = useRouter();
   const params = useParams();
-  const [zoom, setZoom] = useState(100);
-
   const prescriptionId = params.prescriptionId as string;
-  
+
   const [rx, setRx] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [zoom, setZoom] = useState(100);
+  const {
+    prescriptionRef,
+    handlePrint,
+    handleDownloadPdf,
+    isDownloading,
+  } = usePrescriptionExport(rx?.id ?? `RX-${prescriptionId}`);
 
   useEffect(() => {
     if (!prescriptionId) return;
@@ -130,7 +136,7 @@ export default function PatientPrescriptionViewer() {
     <DashboardLayout sidebarItems={sidebarItems} userRole="Patient">
       <div className="space-y-5">
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="prescription-viewer-toolbar flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/patient-dashboard/prescriptions")}
@@ -167,29 +173,38 @@ export default function PatientPrescriptionViewer() {
             </div>
 
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <Printer className="w-4 h-4" />
               Print
             </button>
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-              <Download className="w-4 h-4" />
-              Download PDF
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isDownloading ? "Generating..." : "Download PDF"}
             </button>
           </div>
         </div>
 
         {/* Document Viewer */}
-        <div className="bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-auto p-6 min-h-[75vh]">
+        <div className="prescription-document-viewer bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-auto p-6 min-h-[75vh]">
           <div
+            className="prescription-zoom-wrapper"
             style={{
               transform: `scale(${zoom / 100})`,
               transformOrigin: "top center",
               transition: "transform 0.15s ease",
             }}
           >
-            <PrescriptionDocument rx={rx} />
+            <PrescriptionDocument ref={prescriptionRef} rx={rx} />
           </div>
         </div>
       </div>

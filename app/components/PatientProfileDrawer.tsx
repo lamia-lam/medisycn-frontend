@@ -61,6 +61,15 @@ export function PatientProfileDrawer({
   }, [isOpen]);
 
   const handleSaveProfile = async () => {
+    if (!formData.age || !formData.age.trim()) {
+      alert("Age is required");
+      return;
+    }
+    if (!formData.gender || !formData.gender.trim()) {
+      alert("Gender is required");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const res = await fetch("/api/patient/profile", {
@@ -77,7 +86,8 @@ export function PatientProfileDrawer({
       if (res.ok) {
         alert("Profile updated successfully!");
       } else {
-        alert("Failed to update profile.");
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to update profile.");
       }
     } catch (err) {
       console.error(err);
@@ -214,7 +224,7 @@ export function PatientProfileDrawer({
 
               {/* Editable info */}
               <div>
-                <label className={labelClass}>Age</label>
+                <label className={labelClass}>Age <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   value={formData.age}
@@ -262,7 +272,7 @@ export function PatientProfileDrawer({
               </div>
 
               <div>
-                <label className={labelClass}>Gender</label>
+                <label className={labelClass}>Gender <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <select

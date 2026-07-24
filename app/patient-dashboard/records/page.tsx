@@ -61,9 +61,7 @@ export default function MedicalRecords() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [previewReport, setPreviewReport] = useState<MedicalRecord | null>(
-    null,
-  );
+
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -221,7 +219,6 @@ export default function MedicalRecords() {
                     <RecordCard
                       key={record.id}
                       record={record}
-                      onPreview={() => setPreviewReport(record)}
                     />
                   ))}
                 </div>
@@ -231,13 +228,7 @@ export default function MedicalRecords() {
         )}
       </div>
 
-      {/* PDF Preview Modal */}
-      {previewReport && (
-        <ReportModal
-          record={previewReport}
-          onClose={() => setPreviewReport(null)}
-        />
-      )}
+
     </DashboardLayout>
   );
 }
@@ -246,10 +237,8 @@ export default function MedicalRecords() {
 
 function RecordCard({
   record,
-  onPreview,
 }: {
   record: MedicalRecord;
-  onPreview: () => void;
 }) {
   const hasPdf = !!record.reportUrl;
 
@@ -307,13 +296,15 @@ function RecordCard({
       <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
         {hasPdf ? (
           <>
-            <button
-              onClick={onPreview}
+            <a
+              href={record.reportUrl!}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium transition-colors"
             >
               <Eye className="w-3.5 h-3.5" />
               View Report
-            </button>
+            </a>
             <a
               href={record.reportUrl!}
               download
@@ -339,89 +330,3 @@ function RecordCard({
   );
 }
 
-// ─── Report Preview Modal ─────────────────────────────────────────────────────
-
-function ReportModal({
-  record,
-  onClose,
-}: {
-  record: MedicalRecord;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Modal Header */}
-          <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                {record.testName}
-              </h3>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  {record.doctor}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5" />
-                  {record.department}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {record.testDate}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 ml-4 shrink-0">
-              <a
-                href={record.reportUrl!}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
-              >
-                <Download className="w-4 h-4" />
-                Download
-              </a>
-              <a
-                href={record.reportUrl!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open
-              </a>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-500 dark:text-gray-400"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          {/* PDF Viewer */}
-          <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-900 min-h-0">
-            <iframe
-              src={record.reportUrl!}
-              className="w-full h-full min-h-[60vh]"
-              title={`Report: ${record.testName}`}
-            />
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}

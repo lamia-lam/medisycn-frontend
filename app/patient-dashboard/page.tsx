@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatCard } from "../components/StatCard";
 import { Badge } from "../components/Badge";
+import { MedicationReminderPopup } from "../components/MedicationReminderPopup";
 
 export const patientSidebarItems = [
   {
@@ -78,12 +79,14 @@ export default function PatientDashboard() {
 
   return (
     <DashboardLayout sidebarItems={patientSidebarItems} userRole="Patient">
+      {/* Medication Reminder Popup — shows once per login session if patient has prescriptions */}
+      <MedicationReminderPopup />
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-[1.75rem] font-medium text-gray-800 dark:text-white mb-1">
-              Welcome back, {firstName}! 👋
+              Welcome back, {firstName}
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
               Here's a summary of your health overview
@@ -124,7 +127,11 @@ export default function PatientDashboard() {
           <StatCard
             icon={<Clock className="w-6 h-6" />}
             label="Last Visit"
-            value={appointments.length > 0 ? new Date(appointments[0].date).toLocaleDateString() : "N/A"}
+            value={
+              appointments.length > 0
+                ? new Date(appointments[0].date).toLocaleDateString()
+                : "N/A"
+            }
             trend={appointments.length > 0 ? appointments[0].doctorName : "N/A"}
             color="bg-purple-500"
           />
@@ -158,7 +165,9 @@ export default function PatientDashboard() {
                   <span>Blood Group: {profile.bloodGroup}</span>
                 )}
                 {profile?.dateOfBirth && (
-                  <span>DOB: {new Date(profile.dateOfBirth).toLocaleDateString()}</span>
+                  <span>
+                    DOB: {new Date(profile.dateOfBirth).toLocaleDateString()}
+                  </span>
                 )}
                 {profile?.condition && (
                   <span>Condition: {profile.condition}</span>
@@ -199,9 +208,15 @@ export default function PatientDashboard() {
                 </div>
               ) : (
                 appointments.slice(0, 3).map((apt, index) => {
-                  const initials = apt.doctorName?.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() || "DR";
+                  const initials =
+                    apt.doctorName
+                      ?.split(" ")
+                      .map((n: string) => n[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase() || "DR";
                   const avatarColor = "bg-cyan-100 text-cyan-700";
-                  
+
                   return (
                     <div
                       key={apt.id}
@@ -220,18 +235,31 @@ export default function PatientDashboard() {
                         <p className="font-medium text-gray-800 dark:text-white text-sm truncate">
                           {apt.doctorName}
                         </p>
-                        <p className="text-xs text-gray-400">{apt.doctorSpecialization}</p>
+                        <p className="text-xs text-gray-400">
+                          {apt.doctorSpecialization}
+                        </p>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> {new Date(apt.date).toLocaleDateString()}
+                            <Calendar className="w-3 h-3" />{" "}
+                            {new Date(apt.date).toLocaleDateString()}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {new Date(apt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <Clock className="w-3 h-3" />{" "}
+                            {new Date(apt.date).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                       </div>
                       <Badge
-                        variant={apt.status === "Confirmed" ? "success" : apt.status === "Cancelled" ? "danger" : "warning"}
+                        variant={
+                          apt.status === "Confirmed"
+                            ? "success"
+                            : apt.status === "Cancelled"
+                              ? "danger"
+                              : "warning"
+                        }
                       >
                         {apt.status}
                       </Badge>
@@ -264,7 +292,10 @@ export default function PatientDashboard() {
                 prescriptions.slice(0, 3).map((rx, index) => {
                   let parsedMedicines = [];
                   try {
-                    parsedMedicines = typeof rx.medicines === 'string' ? JSON.parse(rx.medicines) : rx.medicines;
+                    parsedMedicines =
+                      typeof rx.medicines === "string"
+                        ? JSON.parse(rx.medicines)
+                        : rx.medicines;
                   } catch (e) {
                     parsedMedicines = [];
                   }
@@ -295,19 +326,24 @@ export default function PatientDashboard() {
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {Array.isArray(parsedMedicines) && parsedMedicines.slice(0, 2).map((med: any, i: number) => (
-                          <span
-                            key={i}
-                            className="inline-flex items-center gap-1 text-xs bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-full"
-                          >
-                            <Pill className="w-3 h-3" /> {med.name || "Medicine"}
-                          </span>
-                        ))}
-                        {Array.isArray(parsedMedicines) && parsedMedicines.length > 2 && (
-                          <span className="inline-flex items-center gap-1 text-xs bg-gray-50 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">
-                            +{parsedMedicines.length - 2} more
-                          </span>
-                        )}
+                        {Array.isArray(parsedMedicines) &&
+                          parsedMedicines
+                            .slice(0, 2)
+                            .map((med: any, i: number) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center gap-1 text-xs bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-full"
+                              >
+                                <Pill className="w-3 h-3" />{" "}
+                                {med.name || "Medicine"}
+                              </span>
+                            ))}
+                        {Array.isArray(parsedMedicines) &&
+                          parsedMedicines.length > 2 && (
+                            <span className="inline-flex items-center gap-1 text-xs bg-gray-50 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">
+                              +{parsedMedicines.length - 2} more
+                            </span>
+                          )}
                       </div>
                     </div>
                   );

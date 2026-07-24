@@ -10,6 +10,8 @@ import {
   Lock,
   Upload,
   Save,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 interface DoctorProfileDrawerProps {
@@ -34,9 +36,22 @@ export function DoctorProfileDrawer({
     confirmPassword: "",
     avatar: "",
     qualifications: "",
+    availability: [] as { day: string; start: string; end: string }[],
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [isAddingTime, setIsAddingTime] = useState(false);
+  const [newTimeBlock, setNewTimeBlock] = useState({ day: "Sunday", start: "", end: "" });
+
+  const format12Hour = (time24: string) => {
+    if (!time24) return "";
+    const [h, m] = time24.split(":");
+    const hours = parseInt(h, 10);
+    const suffix = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${m} ${suffix}`;
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -61,6 +76,7 @@ export function DoctorProfileDrawer({
           qualifications: data.qualifications || "",
           license: data.license || "",
           avatar: data.avatar || "",
+          availability: Array.isArray(data.availability) ? data.availability : (typeof data.availability === "string" ? JSON.parse(data.availability) : []),
         }));
       }
     } catch (error) {
@@ -83,6 +99,7 @@ export function DoctorProfileDrawer({
           qualifications: formData.qualifications,
           license: formData.license,
           avatar: formData.avatar,
+          availability: formData.availability,
         }),
       });
       if (res.ok) {
@@ -156,21 +173,19 @@ export function DoctorProfileDrawer({
         <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-[152px] z-10 shrink-0">
           <button
             onClick={() => setActiveTab("profile")}
-            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${
-              activeTab === "profile"
-                ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            }`}
+            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${activeTab === "profile"
+              ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              }`}
           >
             Profile Details
           </button>
           <button
             onClick={() => setActiveTab("password")}
-            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${
-              activeTab === "password"
-                ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            }`}
+            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${activeTab === "password"
+              ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              }`}
           >
             Security & Password
           </button>
@@ -289,6 +304,117 @@ export function DoctorProfileDrawer({
                 <p className="text-xs text-gray-400 mt-1">
                   Sourced from your login credentials
                 </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className={labelClass}>Weekly Availability</label>
+                  {!isAddingTime && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingTime(true)}
+                      className="flex items-center gap-1 text-xs font-medium text-cyan-600 hover:text-cyan-700 bg-cyan-50 px-2 py-1 rounded-md transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Time
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {formData.availability.length === 0 && !isAddingTime ? (
+                    <div className="text-center py-4 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 border-dashed">
+                      No availability added yet.
+                    </div>
+                  ) : (
+                    formData.availability.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {item.day} • {format12Hour(item.start)} to {format12Hour(item.end)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newAv = [...formData.availability];
+                            newAv.splice(index, 1);
+                            setFormData({ ...formData, availability: newAv });
+                          }}
+                          className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                          title="Remove Time"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+
+                  {isAddingTime && (
+                    <div className="relative p-4 bg-white dark:bg-gray-900 border-2 border-cyan-500 dark:border-cyan-600 rounded-lg space-y-3 mt-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Day</label>
+                        <select
+                          value={newTimeBlock.day}
+                          onChange={(e) => setNewTimeBlock({ ...newTimeBlock, day: e.target.value })}
+                          className={`${inputClass} pr-8`}
+                        >
+                          {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">From</label>
+                          <input
+                            type="time"
+                            value={newTimeBlock.start}
+                            onChange={(e) => setNewTimeBlock({ ...newTimeBlock, start: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">To</label>
+                          <input
+                            type="time"
+                            value={newTimeBlock.end}
+                            onChange={(e) => setNewTimeBlock({ ...newTimeBlock, end: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingTime(false);
+                            setNewTimeBlock({ day: "Sunday", start: "", end: "" });
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!newTimeBlock.start || !newTimeBlock.end) return;
+                            setFormData({
+                              ...formData,
+                              availability: [...formData.availability, newTimeBlock]
+                            });
+                            setIsAddingTime(false);
+                            setNewTimeBlock({ day: "Sunday", start: "", end: "" });
+                          }}
+                          disabled={!newTimeBlock.start || !newTimeBlock.end}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shadow-sm"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-2">

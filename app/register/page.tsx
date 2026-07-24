@@ -14,6 +14,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     role: "",
+    license: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,8 @@ export default function RegisterPage() {
       !formData.email ||
       !formData.phone ||
       !formData.password ||
-      !formData.role
+      !formData.role ||
+      (formData.role !== "patient" && formData.role !== "admin" && !formData.license)
     ) {
       alert("Please fill all fields");
       return;
@@ -59,6 +61,7 @@ export default function RegisterPage() {
           phone: formData.phone.trim(),
           password: formData.password,
           role: formData.role.toUpperCase(), // IMPORTANT
+          license: formData.license.trim(),
         }),
       });
 
@@ -183,6 +186,29 @@ export default function RegisterPage() {
                 </select>
               </div>
             </div>
+
+            {/* License Number (Conditional) */}
+            {formData.role && formData.role !== "patient" && formData.role !== "admin" && (
+              <div>
+                <label className="block mb-2">License Number</label>
+                <div className="relative">
+                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Medical/Pharmacy License Number"
+                    value={formData.license}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        license: e.target.value,
+                      })
+                    }
+                    className="w-full pl-10 p-3 border rounded"
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Password */}
             <div>

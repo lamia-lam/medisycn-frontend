@@ -1,5 +1,5 @@
-import React from "react";
-import { CheckCircle2, Microscope, Phone, Globe, MapPin } from "lucide-react";
+import React, { forwardRef } from "react";
+import { CheckCircle2, Phone, Globe, MapPin } from "lucide-react";
 
 export interface PrescriptionData {
   id: string;
@@ -50,7 +50,10 @@ export interface PrescriptionData {
   followUp?: string;
 }
 
-export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
+export const PrescriptionDocument = forwardRef<
+  HTMLDivElement,
+  { rx: PrescriptionData }
+>(function PrescriptionDocument({ rx }, ref) {
   const formatMedicineDuration = (med: any) => {
     if (med.duration) return med.duration;
     if (med.durationDays) return `${med.durationDays} Days`;
@@ -66,13 +69,29 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
   };
 
   return (
-    <div className="bg-white border border-gray-300 shadow-sm overflow-hidden relative mx-auto font-sans" style={{ width: "210mm", minHeight: "297mm", backgroundColor: "#ffffff" }}>
-
+    <div
+      ref={ref}
+      id="prescription-card"
+      className="bg-white border border-gray-300 shadow-sm overflow-hidden relative mx-auto font-sans"
+      style={{ width: "210mm", minHeight: "297mm", backgroundColor: "#ffffff" }}
+    >
       {/* Top Graphic Border */}
       <div className="w-full flex h-[30px]">
-        <div className="w-[15%] h-full bg-[#1b8c85]" style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }}></div>
-        <div className="w-[70%] h-full bg-[#0d7870] ml-[-20px]" style={{ clipPath: "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)" }}></div>
-        <div className="w-[15%] h-full bg-[#114b47] ml-[-20px]" style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}></div>
+        <div
+          className="w-[15%] h-full bg-[#1b8c85]"
+          style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }}
+        ></div>
+        <div
+          className="w-[70%] h-full bg-[#0d7870] ml-[-20px]"
+          style={{
+            clipPath:
+              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[15%] h-full bg-[#114b47] ml-[-20px]"
+          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
+        ></div>
       </div>
 
       {/* Header */}
@@ -94,49 +113,85 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
 
         {/* Center: Logo */}
         <div className="flex items-center justify-center pt-2">
-          <div className="w-16 h-16 rounded-full border-[2px] border-[#0d7870] flex items-center justify-center p-1">
-            <div className="w-full h-full rounded-full border-[1.5px] border-[#0d7870] flex items-center justify-center">
-              <span className="text-4xl font-black text-[#0d7870] leading-none pb-1">+</span>
-            </div>
+          <div
+            className="w-20 h-20 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: "#0d7870" }}
+          >
+            <span className="text-white font-bold text-2xl tracking-wide select-none">
+              MS
+            </span>
           </div>
         </div>
 
         {/* Right: Hospital Info */}
         <div className="w-[40%] text-right">
           <h1 className="text-3xl font-bold text-[#0d7870] leading-tight uppercase">
-            {rx.hospital.name.split(' ')[0] || "HOSPITAL"}
+            {rx.hospital.name.split(" ")[0] || "HOSPITAL"}
           </h1>
           <p className="text-sm text-gray-400 uppercase tracking-[0.2em] mt-1 font-medium">
-            {rx.hospital.name.substring(rx.hospital.name.indexOf(' ') + 1) || "SLOGAN HERE"}
+            {rx.hospital.name.substring(rx.hospital.name.indexOf(" ") + 1) ||
+              "SLOGAN HERE"}
           </p>
           <p className="text-[10px] text-gray-500 mt-4 leading-relaxed pl-4">
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
           </p>
         </div>
       </div>
 
       {/* Patient Info Row */}
-      <div className="mx-10 border-t-2 border-b-2 border-gray-300 grid grid-cols-4 divide-x-2 divide-gray-300 py-1.5 mt-2">
-        <div className="px-4 text-center flex gap-2 justify-center items-center">
-          <span className="text-[#0d7870] font-medium text-sm">Date:</span>
-          <span className="text-gray-700 text-sm">{rx.date}</span>
+      <div
+        className="mx-10 border-t-2 border-b-2 border-gray-300 grid
+             grid-cols-[1.2fr_2fr_0.9fr_1fr_1.2fr]
+             divide-x-2 divide-gray-300 py-1.5 mt-2"
+      >
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+          <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
+            Date:
+          </span>
+          <span className="text-gray-700 text-xs">{rx.date}</span>
         </div>
-        <div className="px-4 text-center flex gap-2 justify-center items-center">
-          <span className="text-[#0d7870] font-medium text-sm">Patient Name:</span>
-          <span className="text-gray-700 text-sm">{rx.patient.name}</span>
+
+        <div className="px-2 flex gap-1 items-center min-w-0 font-bold">
+          <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
+            Patient Name:
+          </span>
+          <span className="text-gray-700 text-xs truncate">
+            {rx.patient.name}
+          </span>
         </div>
-        <div className="px-4 text-center flex gap-2 justify-center items-center">
-          <span className="text-[#0d7870] font-medium text-sm">Age:</span>
-          <span className="text-gray-700 text-sm">{rx.patient.age || "—"}</span>
+
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+          <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
+            Age:
+          </span>
+          <span className="text-gray-700 text-xs">{rx.patient.age || "—"}</span>
         </div>
-        <div className="px-4 text-center flex gap-2 justify-center items-center">
-          <span className="text-[#0d7870] font-medium text-sm">Address:</span>
-          <span className="text-gray-700 text-sm truncate">{rx.patient.address || "—"}</span>
+
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+          <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
+            Gender:
+          </span>
+          <span className="text-gray-700 text-xs">
+            {rx.patient.gender || "—"}
+          </span>
+        </div>
+
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+          <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
+            Blood Group:
+          </span>
+          <span className="text-gray-700 text-xs">
+            {rx.patient.bloodGroup || "—"}
+          </span>
         </div>
       </div>
 
       {/* Main Body */}
-      <div className="flex px-10 relative" style={{ minHeight: "calc(100% - 280px)" }}>
+      <div
+        className="flex px-10 relative"
+        style={{ minHeight: "calc(100% - 280px)" }}
+      >
         {/* Background Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] z-0 mt-20">
           <div className="w-[500px] h-[500px] rounded-full border-[15px] border-[#0d7870] flex items-center justify-center p-8">
@@ -152,17 +207,25 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
           {/* Symptoms */}
           {rx.symptoms && (
             <div>
-              <p className="text-sm text-gray-700 leading-relaxed">{rx.symptoms}</p>
+              <span className="font-bold text-[#0d7870] text-sm">
+                Symptoms :{" "}
+              </span>
+              <p className="text-sm text-gray-700 leading-relaxed mt-1">
+                {rx.symptoms}
+              </p>
             </div>
           )}
 
           {/* Investigations / Tests */}
           {rx.tests && rx.tests.length > 0 && (
             <div>
-              <h3 className="font-bold text-[#0d7870] text-sm mb-2">Inv:</h3>
+              <h3 className="font-bold text-[#0d7870] text-sm mb-2">Tests:</h3>
               <ul className="space-y-1.5 pl-1">
                 {rx.tests.map((test, idx) => (
-                  <li key={idx} className="text-gray-700 text-sm flex items-start gap-2">
+                  <li
+                    key={idx}
+                    className="text-gray-700 text-sm flex items-start gap-2"
+                  >
                     <span className="text-[#0d7870] font-bold mt-0.5">•</span>
                     <div>
                       <span className="font-medium">{test.name}</span>
@@ -183,14 +246,20 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
             <div className="pt-4 border-t border-gray-200 space-y-3">
               {rx.notes && (
                 <div>
-                  <span className="font-bold text-[#0d7870] text-sm">Advice:</span>
+                  <span className="font-bold text-[#0d7870] text-sm">
+                    Advice:
+                  </span>
                   <p className="text-sm text-gray-700 mt-1">{rx.notes}</p>
                 </div>
               )}
               {rx.followUp && (
                 <div>
-                  <span className="font-bold text-[#0d7870] text-sm">Follow-up:</span>
-                  <span className="text-sm text-gray-700 ml-2">{rx.followUp}</span>
+                  <span className="font-bold text-[#0d7870] text-sm">
+                    Follow-up:
+                  </span>
+                  <span className="text-sm text-gray-700 ml-2">
+                    {rx.followUp}
+                  </span>
                 </div>
               )}
             </div>
@@ -201,15 +270,17 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
         <div className="flex-1 pt-8 pb-28 pl-6 z-10 text-gray-800 space-y-6">
           {/* Diagnosis */}
           <div>
-            <span className="font-bold text-[#0d7870] text-sm">Dx: </span>
+            <span className="font-bold text-[#0d7870] text-sm">
+              Diagnosis:{" "}
+            </span>
             <span className="font-medium text-gray-800">{rx.diagnosis}</span>
           </div>
 
           {/* Medicines */}
           {rx.medicines && rx.medicines.length > 0 && (
             <div>
-              <h3 className="font-bold text-[#0d7870] text-2xl mb-3 font-serif flex items-end gap-0.5">
-                <span>R</span><span className="text-lg mb-0.5">x</span>
+              <h3 className="font-bold text-[#0d7870] text-sm mb-3">
+                Medications:
               </h3>
               <div className="space-y-4">
                 {rx.medicines.map((med, idx) => {
@@ -219,13 +290,17 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
                     <div key={idx}>
                       <p className="font-bold text-gray-800">
                         {idx + 1}. {med.name}{" "}
-                        <span className="font-normal text-[#0d7870]">{med.strength}</span>
+                        <span className="font-normal text-[#0d7870]">
+                          {med.strength}
+                        </span>
                       </p>
                       {subtitle && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 pl-4 mt-0.5">
                           <span>{subtitle}</span>
                           {duration && (
-                            <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{duration}</span>
+                            <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+                              {duration}
+                            </span>
                           )}
                         </div>
                       )}
@@ -271,11 +346,24 @@ export function PrescriptionDocument({ rx }: { rx: PrescriptionData }) {
 
       {/* Bottom Graphic Border */}
       <div className="absolute bottom-0 left-0 w-full flex h-[30px] z-20">
-        <div className="w-[30%] h-full bg-[#1b8c85]" style={{ clipPath: "polygon(0 0, 80% 0, calc(80% - 20px) 100%, 0% 100%)" }}></div>
-        <div className="w-[50%] h-full bg-[#0d7870] ml-[-20px]" style={{ clipPath: "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)" }}></div>
-        <div className="w-[30%] h-full bg-[#114b47] ml-[-20px]" style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}></div>
+        <div
+          className="w-[30%] h-full bg-[#1b8c85]"
+          style={{
+            clipPath: "polygon(0 0, 80% 0, calc(80% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[50%] h-full bg-[#0d7870] ml-[-20px]"
+          style={{
+            clipPath:
+              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[30%] h-full bg-[#114b47] ml-[-20px]"
+          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
+        ></div>
       </div>
-
     </div>
   );
-}
+});

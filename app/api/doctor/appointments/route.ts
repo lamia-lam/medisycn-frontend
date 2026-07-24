@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
     type: a.type,
     notes: a.notes,
     status: a.status,
+    serialNo: a.serialNo,
     patientId: a.patient.id,
     patientName: a.patient.user.name,
     patientPhone: a.patient.user.phone,
@@ -112,9 +113,38 @@ export async function PATCH(req: NextRequest) {
 
   const newStatus = action === "accept" ? "Confirmed" : "Cancelled";
 
+  let serialNo = null;
+  if (action === "accept") {
+    // Generate serialNo for the given date and doctor
+    const startOfDay = new Date(appointment.date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(appointment.date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const maxAppointment = await prisma.appointment.findFirst({
+      where: {
+        doctorId: doctor.id,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: "Confirmed",
+      },
+      orderBy: {
+        serialNo: "desc",
+      },
+    });
+
+    serialNo = (maxAppointment?.serialNo || 0) + 1;
+  }
+
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { status: newStatus },
+    data: { 
+      status: newStatus,
+      ...(serialNo !== null && { serialNo }),
+    },
   });
 
   return NextResponse.json(updated);
