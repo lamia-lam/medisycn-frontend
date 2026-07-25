@@ -13,10 +13,21 @@ export async function POST(req: Request) {
     return Response.json({ error: "User not found" }, { status: 401 });
   }
 
+  if (!user.password) {
+    return Response.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
   const isValid = await bcrypt.compare(password, user.password);
 
   if (!isValid) {
     return Response.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  if (user.status === "SUSPENDED") {
+    return Response.json(
+      { error: "Your account has been suspended by an administrator." },
+      { status: 403 }
+    );
   }
 
   const token = jwt.sign(

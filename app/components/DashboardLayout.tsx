@@ -3,10 +3,12 @@
 import React, { useState } from "react";
 import { LogOut, X, Menu } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { DoctorProfileDrawer } from "./DoctorProfileDrawer";
 import { PatientProfileDrawer } from "./PatientProfileDrawer";
 import { PharmacyProfileDrawer } from "./PharmacyProfileDrawer";
 import { DiagnosticProfileDrawer } from "./DiagnosticProfileDrawer";
+import { AdminProfileDrawer } from "./AdminProfileDrawer";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -39,12 +41,16 @@ export function DashboardLayout({
       document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       localStorage.removeItem("token");
       localStorage.removeItem("role");
+      // Clear all medication reminder session flags so popup re-appears on next login
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith("medReminderShown"))
+        .forEach((k) => sessionStorage.removeItem(k));
       router.replace("/login");
     }
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] dark:bg-gray-900 font-sans">
+    <div className="dashboard-shell flex h-screen bg-[#f8fafc] dark:bg-gray-900 font-sans">
       {/* Sidebar */}
       <aside
         className={`${
@@ -83,9 +89,10 @@ export function DashboardLayout({
               pathname === item.href ||
               (!isExactRoot && pathname.startsWith(item.href + "/"));
             return (
-              <a
+              <Link
                 key={index}
                 href={item.href}
+                suppressHydrationWarning
                 title={sidebarCollapsed ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
                   sidebarCollapsed ? "justify-center" : ""
@@ -96,6 +103,7 @@ export function DashboardLayout({
                 }`}
               >
                 <div
+                  suppressHydrationWarning
                   className={`shrink-0 ${isActive ? "text-[#0ab3b3]" : "text-gray-400"}`}
                 >
                   {item.icon}
@@ -103,7 +111,7 @@ export function DashboardLayout({
                 {!sidebarCollapsed && (
                   <span className="whitespace-nowrap">{item.label}</span>
                 )}
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -178,6 +186,11 @@ export function DashboardLayout({
         />
       ) : userRole?.toLowerCase() === "diagnostic" ? (
         <DiagnosticProfileDrawer
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      ) : userRole?.toLowerCase() === "admin" ? (
+        <AdminProfileDrawer
           isOpen={isProfileOpen}
           onClose={() => setIsProfileOpen(false)}
         />

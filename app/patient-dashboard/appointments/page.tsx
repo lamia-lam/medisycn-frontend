@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   Hourglass,
+  Hash,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -32,6 +33,7 @@ interface Appointment {
   date: string;
   type: string | null;
   status: "Pending" | "Confirmed" | "Cancelled";
+  serialNo?: number | null;
   notes?: string | null;
   createdAt: string;
 }
@@ -210,6 +212,12 @@ export default function PatientAppointments() {
                         <span className="inline-block mt-1 px-3 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium">
                           {apt.type}
                         </span>
+                      )}
+                      {apt.serialNo && (
+                        <div className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 rounded-lg text-sm font-semibold w-fit border border-cyan-100 dark:border-cyan-800/30">
+                          <Hash className="w-4 h-4" />
+                          <span>Serial No: {apt.serialNo}</span>
+                        </div>
                       )}
                     </div>
 

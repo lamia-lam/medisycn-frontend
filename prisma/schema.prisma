@@ -8,10 +8,17 @@ datasource db {
 }
 
 enum Role {
+  ADMIN
   DOCTOR
   PATIENT
   PHARMACY
   DIAGNOSTIC
+}
+
+enum AccountStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
 }
 
 model User {
@@ -22,11 +29,13 @@ model User {
   password  String?
   isOffline Boolean @default(false)
   role      Role
+  status    AccountStatus @default(PENDING)
   createdAt DateTime @default(now())
 
-  doctor  Doctor?
-  patient Patient?
-  pharmacy Pharmacy?
+  doctor     Doctor?
+  patient    Patient?
+  pharmacy   Pharmacy?
+  diagnostic Diagnostic?
 }
 
 model Pharmacy {
@@ -36,7 +45,17 @@ model Pharmacy {
   avatar    String?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Diagnostic {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  license   String?
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Doctor {
@@ -49,10 +68,11 @@ model Doctor {
   qualifications String?
   license        String?
   avatar         String?
+  availability   Json?
 
   createdAt      DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   patients       DoctorPatient[]
   prescriptions  Prescription[]
@@ -71,7 +91,7 @@ model Patient {
   status        String   @default("Active")
   createdAt     DateTime @default(now())
 
-  user          User             @relation(fields: [userId], references: [id])
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctors       DoctorPatient[]
   prescriptions Prescription[]
   appointments  Appointment[]
@@ -89,8 +109,8 @@ model DoctorPatient {
   createdAt DateTime @default(now())
   lastVisit DateTime @default(now())
 
-  doctor  Doctor  @relation(fields: [doctorId], references: [id])
-  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, patientId])
 }
@@ -103,10 +123,11 @@ model Appointment {
   type        String?
   notes       String?
   status      String   @default("Pending")
+  serialNo    Int?
   createdAt   DateTime @default(now())
 
-  doctor  Doctor  @relation(fields: [doctorId], references: [id])
-  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model Prescription {
@@ -120,8 +141,8 @@ model Prescription {
   notes         String?
   createdAt     DateTime @default(now())
 
-  doctor  Doctor  @relation(fields: [doctorId], references: [id])
-  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   dispenseRecords DispenseRecord[]
 }
 
@@ -136,7 +157,7 @@ model DiagnosticReport {
   status         String   @default("In_Progress")
   createdAt      DateTime @default(now())
 
-  patient Patient @relation(fields: [patientId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 
@@ -151,7 +172,7 @@ model MedicalHistory {
 
   createdAt   DateTime @default(now())
 
-  patient Patient @relation(fields: [patientId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model Medicine {
@@ -174,6 +195,6 @@ model DispenseRecord {
   status             String
   dispensedAt        DateTime @default(now())
 
-  prescription Prescription @relation(fields: [prescriptionId], references: [id])
-  patient      Patient      @relation(fields: [patientId], references: [id])
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }

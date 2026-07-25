@@ -54,6 +54,7 @@ type RecentPatient = {
 export default function DoctorDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
   const [data, setData] = useState({
     doctorName: "",
     stats: {
@@ -69,7 +70,9 @@ export default function DoctorDashboard() {
     fetch("/api/doctor/dashboard")
       .then((res) => res.json())
       .then((resData) => {
-        if (!resData.error) {
+        if (resData.error === "Account pending approval") {
+          setPending(true);
+        } else if (!resData.error) {
           setData(resData);
         }
       })
@@ -82,6 +85,24 @@ export default function DoctorDashboard() {
       <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
         <div className="flex h-[80vh] items-center justify-center">
           <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (pending) {
+    return (
+      <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
+        <div className="flex h-[80vh] items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full mb-4">
+               <Clock className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Account Pending Approval</h2>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Your account is currently under review by the administration. You will be able to access the dashboard once your license has been verified.
+            </p>
+          </div>
         </div>
       </DashboardLayout>
     );

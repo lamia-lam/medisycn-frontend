@@ -33,6 +33,7 @@ interface Appointment {
   type: string | null;
   notes: string | null;
   status: "Pending" | "Confirmed" | "Cancelled";
+  serialNo: number | null;
   createdAt: string;
 }
 
@@ -109,16 +110,39 @@ export default function AppointmentsPage() {
     }
   };
 
-  const filtered = appointments
-    .filter((a) => {
-      const matchSearch =
-        (a.patientName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.type ?? "").toLowerCase().includes(searchQuery.toLowerCase());
-      const matchStatus =
-        filterStatus === "all" || a.status.toLowerCase() === filterStatus.toLowerCase();
-      return matchSearch && matchStatus;
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const filtered = appointments.filter((a) => {
+    const matchSearch =
+      (a.patientName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.type ?? "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus =
+      filterStatus === "all" || a.status.toLowerCase() === filterStatus.toLowerCase();
+    
+    // Filter out past appointments (keep today and future)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const matchNotPast = new Date(a.date).getTime() >= today.getTime();
+    
+    return matchSearch && matchStatus && matchNotPast;
+  });
+  // Sort by date (oldest first or newest?), then by createdAt
+  const sorted = [...filtered].sort((a, b) => {
+    const d1 = new Date(a.date).getTime();
+    const d2 = new Date(b.date).getTime();
+    if (d1 === d2) {
+      // if same time slot, whoever requested first is shown first
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    return d1 - d2;
+  });
+
+  const groupedByDate = sorted.reduce((acc, apt) => {
+    const dateStr = new Date(apt.date).toLocaleDateString("en-US", {
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+    });
+    if (!acc[dateStr]) acc[dateStr] = [];
+    acc[dateStr].push(apt);
+    return acc;
+  }, {} as Record<string, Appointment[]>);
 
   const stats = {
     total: appointments.length,
@@ -194,13 +218,13 @@ export default function AppointmentsPage() {
             </p>
           </div>
 
-          {/* Cards */}
-          <div className="p-6 space-y-4">
+          {/* Grouped Tables */}
+          <div className="p-6 space-y-8">
             {loading ? (
               <div className="text-center py-16">
                 <p className="text-gray-400 text-sm">Loading appointments…</p>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : Object.keys(groupedByDate).length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                   <Calendar className="w-8 h-8 text-gray-400" />
@@ -209,93 +233,90 @@ export default function AppointmentsPage() {
                 <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
               </div>
             ) : (
-              filtered.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md hover:border-cyan-200 dark:hover:border-cyan-800 transition-all"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full ${avatarColor(apt.patientId)} flex items-center justify-center font-semibold text-sm shrink-0`}>
-                      {initials(apt.patientName)}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-800 dark:text-white">{apt.patientName}</h4>
-                        {statusBadge(apt.status)}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 mb-3">
-                        {apt.patientPhone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3" /> {apt.patientPhone}
-                          </span>
-                        )}
-                        {apt.patientGender && <span>{apt.patientGender}</span>}
-                        {apt.patientBloodGroup && <span>Blood: {apt.patientBloodGroup}</span>}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          {new Date(apt.date).toLocaleDateString()}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          {new Date(apt.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                        {apt.type && (
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
-                            {apt.type}
-                          </span>
-                        )}
-                      </div>
-
-                      {apt.notes && (
-                        <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                          {apt.notes}
-                        </div>
-                      )}
-                    </div>
+              Object.entries(groupedByDate).map(([dateStr, apts]) => (
+                <div key={dateStr} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    {dateStr}
+                  </h3>
+                  <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400 min-w-[700px]">
+                      <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                          <th className="px-5 py-3.5 font-medium w-24">Serial No</th>
+                          <th className="px-5 py-3.5 font-medium">Patient</th>
+                          <th className="px-5 py-3.5 font-medium">Time</th>
+                          <th className="px-5 py-3.5 font-medium">Type</th>
+                          <th className="px-5 py-3.5 font-medium">Status</th>
+                          <th className="px-5 py-3.5 font-medium text-right w-28">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {apts.map((apt) => (
+                          <tr key={apt.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors">
+                            <td className="px-5 py-4 font-medium text-gray-800 dark:text-gray-200">
+                              {apt.serialNo ? (
+                                <span className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 px-2 py-1 rounded text-xs">
+                                  #{apt.serialNo}
+                                </span>
+                              ) : "—"}
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full ${avatarColor(apt.patientId)} flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm`}>
+                                  {initials(apt.patientName)}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-800 dark:text-gray-200">{apt.patientName}</p>
+                                  <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-gray-400 mt-0.5">
+                                    {apt.patientPhone && <span>{apt.patientPhone}</span>}
+                                    {apt.patientGender && <span>• {apt.patientGender}</span>}
+                                    {apt.patientBloodGroup && <span>• Blood: {apt.patientBloodGroup}</span>}
+                                  </div>
+                                  {apt.notes && <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 max-w-[220px] truncate" title={apt.notes}>{apt.notes}</p>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 font-medium">
+                              {new Date(apt.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </td>
+                            <td className="px-5 py-4">
+                              {apt.type ? (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                  {apt.type}
+                                </span>
+                              ) : "—"}
+                            </td>
+                            <td className="px-5 py-4">
+                              {statusBadge(apt.status)}
+                            </td>
+                            <td className="px-5 py-4 text-right">
+                              {apt.status === "Pending" && (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => handleAccept(apt.id)}
+                                    disabled={actionLoading}
+                                    className="p-1.5 border border-green-200 dark:border-green-800 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors shadow-sm"
+                                    title="Confirm Appointment"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDecline(apt.id)}
+                                    disabled={actionLoading}
+                                    className="p-1.5 border border-red-200 dark:border-red-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors shadow-sm"
+                                    title="Decline"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-
-                  {/* Actions — Pending only */}
-                  {apt.status === "Pending" && (
-                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <button
-                        onClick={() => handleAccept(apt.id)}
-                        disabled={actionLoading}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Check className="w-4 h-4" /> Confirm Appointment
-                      </button>
-                      <button
-                        onClick={() => handleDecline(apt.id)}
-                        disabled={actionLoading}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <X className="w-4 h-4" /> Decline
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Confirmed notice */}
-                  {apt.status === "Confirmed" && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <p className="text-sm text-green-600 dark:text-green-400 text-center font-medium">
-                        ✓ Appointment confirmed — patient has been notified.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Cancelled notice */}
-                  {apt.status === "Cancelled" && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <p className="text-sm text-gray-400 text-center">
-                        This appointment was declined.
-                      </p>
-                    </div>
-                  )}
                 </div>
               ))
             )}

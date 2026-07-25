@@ -14,9 +14,14 @@ import {
   Calendar,
   AlertCircle,
   Loader2,
+  ZoomIn,
+  ZoomOut,
+  Printer,
+  Download,
 } from "lucide-react";
 import { DashboardLayout } from "../../../../../components/DashboardLayout";
 import { PrescriptionDocument } from "../../../../../components/PrescriptionDocument";
+import { usePrescriptionExport } from "../../../../../hooks/usePrescriptionExport";
 
 const sidebarItems = [
   {
@@ -84,6 +89,7 @@ type PrescriptionDetail = {
   doctor: {
     name: string;
     designation?: string | null;
+    qualifications?: string | null;
     specialization: string | null;
     department: string | null;
     license: string | null;
@@ -114,6 +120,13 @@ export default function ViewPrescriptionPage() {
   const [rx, setRx] = useState<PrescriptionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [zoom, setZoom] = useState(100);
+  const {
+    prescriptionRef,
+    handlePrint,
+    handleDownloadPdf,
+    isDownloading,
+  } = usePrescriptionExport(rx?.displayId ?? `RX-${prescriptionId}`);
 
   useEffect(() => {
     async function fetchPrescription() {
@@ -196,7 +209,7 @@ export default function ViewPrescriptionPage() {
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-5">
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="prescription-viewer-toolbar flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button
               onClick={() =>
@@ -216,49 +229,99 @@ export default function ViewPrescriptionPage() {
             </div>
           </div>
 
-          <button
-            onClick={() =>
-              router.push(
-                `/pharmacy-dashboard/patient-search/${patientId}/prescription/${prescriptionId}/dispense`,
-              )
-            }
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-          >
-            Proceed to Dispense
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-600 rounded-lg px-1 py-1 bg-white dark:bg-gray-800">
+              <button
+                onClick={() => setZoom((z) => Math.max(50, z - 10))}
+                className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300 px-2 min-w-[44px] text-center">
+                {zoom}%
+              </span>
+              <button
+                onClick={() => setZoom((z) => Math.min(200, z + 10))}
+                className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Printer className="w-4 h-4" />
+              Print
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed text-gray-700 rounded-lg text-sm font-medium transition-colors"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isDownloading ? "Generating..." : "Download PDF"}
+            </button>
+            <button
+              onClick={() =>
+                router.push(
+                  `/pharmacy-dashboard/patient-search/${patientId}/prescription/${prescriptionId}/dispense`,
+                )
+              }
+              className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              Proceed to Dispense
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Document Viewer */}
-        <div className="bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-auto p-6 min-h-[75vh]">
-          <PrescriptionDocument
-            rx={{
-              id: rx.displayId,
-              date: rx.date,
-              patient: {
-                name: rx.patient.name,
-                id: rx.patient.ref,
-                age: rx.patient.age || undefined,
-                gender: rx.patient.gender || undefined,
-                bloodGroup: rx.patient.bloodGroup || undefined,
-              },
-              doctor: {
-                name: rx.doctor.name,
-                designation: rx.doctor.designation || undefined,
-                department: rx.doctor.department || undefined,
-                qualifications: rx.doctor.qualifications || undefined,
-                specialization: doctorSpecialization,
-                license: rx.doctor.license || undefined,
-              },
-              hospital: HOSPITAL,
-              diagnosis: rx.diagnosis,
-              symptoms: symptoms,
-              medicines: rx.medicines,
-              tests: rx.tests,
-              notes: notes,
-              followUp: "As needed"
+        <div className="prescription-document-viewer bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-auto p-6 min-h-[75vh]">
+          <div
+            className="prescription-zoom-wrapper"
+            style={{
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: "top center",
+              transition: "transform 0.15s ease",
             }}
-          />
+          >
+            <PrescriptionDocument
+              ref={prescriptionRef}
+              rx={{
+                id: rx.displayId,
+                date: rx.date,
+                patient: {
+                  name: rx.patient.name,
+                  id: rx.patient.ref,
+                  age: rx.patient.age || undefined,
+                  gender: rx.patient.gender || undefined,
+                  bloodGroup: rx.patient.bloodGroup || undefined,
+                },
+                doctor: {
+                  name: rx.doctor.name,
+                  designation: rx.doctor.designation || undefined,
+                  department: rx.doctor.department || undefined,
+                  qualifications: rx.doctor.qualifications || undefined,
+                  specialization: doctorSpecialization,
+                  license: rx.doctor.license || undefined,
+                },
+                hospital: HOSPITAL,
+                diagnosis: rx.diagnosis,
+                symptoms: symptoms,
+                medicines: rx.medicines,
+                tests: rx.tests,
+                notes: notes,
+                followUp: "As needed"
+              }}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

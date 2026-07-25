@@ -13,6 +13,7 @@ export async function GET() {
       specialization: true,
       department: true,
       designation: true,
+      availability: true,
       user: {
         select: { name: true },
       },
