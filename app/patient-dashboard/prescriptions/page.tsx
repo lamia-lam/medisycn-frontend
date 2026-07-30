@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "../../components/DashboardLayout";
+import { PrescriptionDocument } from "../../components/PrescriptionDocument";
+import { downloadPrescriptionPdf, getPrescriptionFilename } from "../../lib/prescriptionExport";
 import {
   Activity,
   Calendar,
@@ -33,6 +35,77 @@ export default function PatientPrescriptions() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [hiddenRxData, setHiddenRxData] = useState<any>(null);
+  const hiddenPrescriptionRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadClick = async (rxInfo: any) => {
+    if (downloadingId) return;
+    setDownloadingId(rxInfo.id);
+    try {
+      const res = await fetch(`/api/patient/prescription/${rxInfo.realId}`);
+      if (!res.ok) throw new Error("Failed to load prescription details");
+      const data = await res.json();
+      
+      const transformedRx = {
+        id: rxInfo.id,
+        date: new Date(data.createdAt).toISOString().split('T')[0],
+        patient: {
+          name: data.patient.name,
+          id: `P${data.patient.id.toString().padStart(3, '0')}`,
+          age: data.patient.age || "-",
+          gender: data.patient.gender || "-",
+          phone: data.patient.phone || "-",
+          address: data.patient.address || "-",
+        },
+        doctor: {
+          name: data.doctor.name,
+          designation: data.doctor.designation || undefined,
+          department: data.doctor.department || undefined,
+          qualifications: data.doctor.qualifications || undefined,
+          specialization: data.doctor.specialization || "Doctor",
+          license: data.doctor.license || "-",
+          phone: data.doctor.phone || "-",
+        },
+        hospital: {
+          name: "MediSync Health Center",
+          address: "456 Healthcare Ave, Springfield, IL 62702",
+          phone: "+1 (555) 111-2222",
+          website: "www.medisync.health",
+        },
+        diagnosis: data.diagnosis,
+        symptoms: data.symptoms || "None reported",
+        medicines: data.medicines || [],
+        tests: data.tests || [],
+        notes: data.notes || "No additional notes.",
+        followUp: "As needed", 
+      };
+
+      setHiddenRxData(transformedRx);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download prescription.");
+      setDownloadingId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (hiddenRxData && hiddenPrescriptionRef.current) {
+      setTimeout(() => {
+        downloadPrescriptionPdf(
+          hiddenPrescriptionRef.current!,
+          getPrescriptionFilename(hiddenRxData.id)
+        ).catch(err => {
+          console.error(err);
+          alert("Failed to generate PDF");
+        }).finally(() => {
+          setDownloadingId(null);
+          setHiddenRxData(null);
+        });
+      }, 100);
+    }
+  }, [hiddenRxData]);
 
   useEffect(() => {
     async function fetchPrescriptions() {
@@ -207,9 +280,15 @@ export default function PatientPrescriptions() {
                       </button>
                       <button
                         title="Download"
-                        className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                        onClick={() => handleDownloadClick(rx)}
+                        disabled={downloadingId === rx.id}
+                        className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        {downloadingId === rx.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -233,6 +312,13 @@ export default function PatientPrescriptions() {
           )}
         </div>
       </div>
+
+      {/* Hidden container for PDF generation */}
+      {hiddenRxData && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0, visibility: "hidden" }}>
+          <PrescriptionDocument ref={hiddenPrescriptionRef} rx={hiddenRxData} />
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -17,6 +17,7 @@ function copyPageStyles(): string {
     .join("\n");
 }
 
+/** Styles for the print iframe — shared by both print and PDF download. */
 const IFRAME_PRINT_STYLES = `
   @page { size: A4; margin: 0; }
   html, body {
@@ -25,6 +26,9 @@ const IFRAME_PRINT_STYLES = `
     background: #ffffff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   #prescription-card {
     width: 210mm !important;
@@ -36,14 +40,43 @@ const IFRAME_PRINT_STYLES = `
   }
 `;
 
-function createPrescriptionIframe(element: HTMLElement): {
+
+function stylePrescriptionCloneForPrint(clone: HTMLElement): void {
+  clone.style.width = "210mm";
+  clone.style.minHeight = "297mm";
+  clone.style.height = "297mm";
+  clone.style.boxShadow = "none";
+  clone.style.margin = "0";
+  clone.style.border = "none";
+}
+
+
+function buildIframeDocument(extraStyles: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Prescription</title>
+  ${copyPageStyles()}
+  <style>${extraStyles}</style>
+</head>
+<body></body>
+</html>`;
+}
+
+function createPrescriptionIframe(
+  element: HTMLElement,
+  extraStyles: string,
+  prepareClone: (clone: HTMLElement) => void,
+): {
   iframe: HTMLIFrameElement;
+  iframeDoc: Document;
   card: HTMLElement;
 } {
   const iframe = document.createElement("iframe");
   iframe.setAttribute(
     "style",
-    "position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:0;visibility:hidden",
+    `position:fixed;left:-9999px;top:0;width:${A4_WIDTH_PX}px;height:${A4_HEIGHT_PX}px;border:0;visibility:hidden`,
   );
   document.body.appendChild(iframe);
 
@@ -54,39 +87,61 @@ function createPrescriptionIframe(element: HTMLElement): {
   }
 
   const clone = element.cloneNode(true) as HTMLElement;
-  clone.style.width = "210mm";
-  clone.style.minHeight = "297mm";
-  clone.style.height = "297mm";
-  clone.style.boxShadow = "none";
-  clone.style.margin = "0";
-  clone.style.border = "none";
+  prepareClone(clone);
 
   iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Prescription</title>
-  ${copyPageStyles()}
-  <style>${IFRAME_PRINT_STYLES}</style>
-</head>
-<body></body>
-</html>`);
+  iframeDoc.write(buildIframeDocument(extraStyles));
   iframeDoc.body.appendChild(clone);
   iframeDoc.close();
 
-  return { iframe, card: clone };
+  const card = iframeDoc.getElementById(PRESCRIPTION_CARD_ID) ?? clone;
+
+  return { iframe, iframeDoc, card };
 }
 
-async function waitForIframeRender(): Promise<void> {
+async function waitForStylesheets(doc: Document): Promise<void> {
+  const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+
+  await Promise.all(
+    links.map(
+      (link) =>
+        new Promise<void>((resolve) => {
+          const sheet = link as HTMLLinkElement;
+          if (sheet.sheet) {
+            resolve();
+            return;
+          }
+          link.addEventListener("load", () => resolve(), { once: true });
+          link.addEventListener("error", () => resolve(), { once: true });
+          setTimeout(resolve, 5000);
+        }),
+    ),
+  );
+}
+
+async function waitForIframeReady(
+  iframeDoc: Document,
+  delayMs = 250,
+): Promise<void> {
+  await waitForStylesheets(iframeDoc);
+
+  if (iframeDoc.fonts?.ready) {
+    await iframeDoc.fonts.ready;
+  }
+
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
-  await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
+  await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
 }
 
 export function printPrescription(element: HTMLElement): void {
-  const { iframe, card } = createPrescriptionIframe(element);
+  const { iframe, card } = createPrescriptionIframe(
+    element,
+    IFRAME_PRINT_STYLES,
+    stylePrescriptionCloneForPrint,
+  );
   const iframeWindow = iframe.contentWindow;
   if (!iframeWindow) {
     iframe.remove();
@@ -119,23 +174,30 @@ export async function downloadPrescriptionPdf(
     import("jspdf"),
   ]);
 
-  const { iframe, card } = createPrescriptionIframe(element);
+  // Reuse the exact same iframe pipeline as printPrescription()
+  const { iframe, iframeDoc, card } = createPrescriptionIframe(
+    element,
+    IFRAME_PRINT_STYLES,
+    stylePrescriptionCloneForPrint,
+  );
 
   try {
-    await waitForIframeRender();
+    await waitForIframeReady(iframeDoc);
 
+    // html2canvas derives its rendering context from card.ownerDocument,
+    // which is the iframe document — same styles/fonts as printPrescription().
     const canvas = await html2canvas(card, {
-      scale: 1.5,
-      width: A4_WIDTH_PX,
-      height: A4_HEIGHT_PX,
-      windowWidth: A4_WIDTH_PX,
-      windowHeight: A4_HEIGHT_PX,
+      scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
+      foreignObjectRendering: true,
       logging: false,
+      imageTimeout: 0,
+      windowWidth: A4_WIDTH_PX,
+      windowHeight: A4_HEIGHT_PX,
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -143,7 +205,7 @@ export async function downloadPrescriptionPdf(
       compress: true,
     });
 
-    pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
+    pdf.addImage(imgData, "PNG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
     pdf.save(filename);
   } finally {
     iframe.remove();

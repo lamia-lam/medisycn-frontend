@@ -76,23 +76,15 @@ export const PrescriptionDocument = forwardRef<
       style={{ width: "210mm", minHeight: "297mm", backgroundColor: "#ffffff" }}
     >
       {/* Top Graphic Border */}
-      <div className="w-full flex h-[30px]">
-        <div
-          className="w-[15%] h-full bg-[#1b8c85]"
-          style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }}
-        ></div>
-        <div
-          className="w-[70%] h-full bg-[#0d7870] ml-[-20px]"
-          style={{
-            clipPath:
-              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
-          }}
-        ></div>
-        <div
-          className="w-[15%] h-full bg-[#114b47] ml-[-20px]"
-          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
-        ></div>
-      </div>
+      <svg
+        viewBox="0 0 1000 30"
+        className="w-full h-[30px]"
+        preserveAspectRatio="none"
+      >
+        <polygon points="0,0 150,0 110,30 0,30" fill="#1b8c85" />
+        <polygon points="150,0 850,0 810,30 110,30" fill="#0d7870" />
+        <polygon points="850,0 1000,0 1000,30 810,30" fill="#114b47" />
+      </svg>
 
       {/* Header */}
       <div className="px-10 py-8 flex items-start justify-between">
@@ -141,47 +133,46 @@ export const PrescriptionDocument = forwardRef<
 
       {/* Patient Info Row */}
       <div
-        className="mx-10 border-t-2 border-b-2 border-gray-300 grid
-             grid-cols-[1.2fr_2fr_0.9fr_1fr_1.2fr]
+        className="prescription-patient-row mx-10 border-t-2 border-b-2 border-gray-300 flex items-center
              divide-x-2 divide-gray-300 py-1.5 mt-2"
       >
-        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="w-[19%] px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Date:
           </span>
-          <span className="text-gray-700 text-xs">{rx.date}</span>
+          <span className="text-gray-700 text-xs whitespace-nowrap">{rx.date}</span>
         </div>
 
-        <div className="px-2 flex gap-1 items-center min-w-0 font-bold">
+        <div className="w-[32%] px-2 flex gap-1 justify-center items-center min-w-0 font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Patient Name:
           </span>
-          <span className="text-gray-700 text-xs truncate">
+          <span className="text-gray-700 text-xs whitespace-nowrap">
             {rx.patient.name}
           </span>
         </div>
 
-        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="w-[14%] px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Age:
           </span>
-          <span className="text-gray-700 text-xs">{rx.patient.age || "—"}</span>
+          <span className="text-gray-700 text-xs whitespace-nowrap">{rx.patient.age || "—"}</span>
         </div>
 
-        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="w-[16%] px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Gender:
           </span>
-          <span className="text-gray-700 text-xs">
+          <span className="text-gray-700 text-xs whitespace-nowrap">
             {rx.patient.gender || "—"}
           </span>
         </div>
 
-        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="w-[19%] px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Blood Group:
           </span>
-          <span className="text-gray-700 text-xs">
+          <span className="text-gray-700 text-xs whitespace-nowrap">
             {rx.patient.bloodGroup || "—"}
           </span>
         </div>
@@ -193,13 +184,47 @@ export const PrescriptionDocument = forwardRef<
         style={{ minHeight: "calc(100% - 280px)" }}
       >
         {/* Background Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] z-0 mt-20">
-          <div className="w-[500px] h-[500px] rounded-full border-[15px] border-[#0d7870] flex items-center justify-center p-8">
-            <div className="w-full h-full rounded-full border-[10px] border-[#0d7870] flex items-center justify-center relative">
-              <div className="absolute w-24 h-80 bg-[#0d7870] rounded-lg"></div>
-              <div className="absolute h-24 w-80 bg-[#0d7870] rounded-lg"></div>
-            </div>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 mt-20">
+          <svg
+            viewBox="0 0 500 500"
+            className="w-[500px] h-[500px] opacity-[0.03] text-[#0d7870]"
+          >
+            {/* Outer circle */}
+            <circle
+              cx="250"
+              cy="250"
+              r="235"
+              stroke="currentColor"
+              strokeWidth="15"
+              fill="none"
+            />
+            {/* Inner circle */}
+            <circle
+              cx="250"
+              cy="250"
+              r="190"
+              stroke="currentColor"
+              strokeWidth="10"
+              fill="none"
+            />
+            {/* Cross (plus sign) */}
+            <rect
+              x="202"
+              y="90"
+              width="96"
+              height="320"
+              rx="8"
+              fill="currentColor"
+            />
+            <rect
+              x="90"
+              y="202"
+              width="320"
+              height="96"
+              rx="8"
+              fill="currentColor"
+            />
+          </svg>
         </div>
 
         {/* Left Panel — Symptoms & Tests (Inv:) */}
@@ -288,7 +313,7 @@ export const PrescriptionDocument = forwardRef<
                   const duration = formatMedicineDuration(med);
                   return (
                     <div key={idx}>
-                      <p className="font-bold text-gray-800">
+                      <p className="font-bold text-gray-800 leading-6" style={{ lineHeight: "1.4" }}>
                         {idx + 1}. {med.name}{" "}
                         <span className="font-normal text-[#0d7870]">
                           {med.strength}
@@ -305,9 +330,9 @@ export const PrescriptionDocument = forwardRef<
                         </div>
                       )}
                       {med.instructions && (
-                        <p className="text-sm text-gray-500 pl-4 mt-0.5 flex items-start gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-[#0d7870] mt-1 flex-shrink-0" />
-                          {med.instructions}
+                        <p className="text-sm text-gray-500 pl-4 mt-0.5 flex items-center gap-1" style={{ lineHeight: "1.4" }}>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0d7870] shrink-0" />
+                          <span>{med.instructions}</span>
                         </p>
                       )}
                     </div>
@@ -345,25 +370,15 @@ export const PrescriptionDocument = forwardRef<
       </div>
 
       {/* Bottom Graphic Border */}
-      <div className="absolute bottom-0 left-0 w-full flex h-[30px] z-20">
-        <div
-          className="w-[30%] h-full bg-[#1b8c85]"
-          style={{
-            clipPath: "polygon(0 0, 80% 0, calc(80% - 20px) 100%, 0% 100%)",
-          }}
-        ></div>
-        <div
-          className="w-[50%] h-full bg-[#0d7870] ml-[-20px]"
-          style={{
-            clipPath:
-              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
-          }}
-        ></div>
-        <div
-          className="w-[30%] h-full bg-[#114b47] ml-[-20px]"
-          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
-        ></div>
-      </div>
+      <svg
+        viewBox="0 0 1000 30"
+        className="absolute bottom-0 left-0 w-full h-[30px] z-20"
+        preserveAspectRatio="none"
+      >
+        <polygon points="0,0 240,0 220,30 0,30" fill="#1b8c85" />
+        <polygon points="240,0 740,0 720,30 220,30" fill="#0d7870" />
+        <polygon points="740,0 1000,0 1000,30 720,30" fill="#114b47" />
+      </svg>
     </div>
   );
 });
