@@ -9,6 +9,7 @@ import { PatientProfileDrawer } from "./PatientProfileDrawer";
 import { PharmacyProfileDrawer } from "./PharmacyProfileDrawer";
 import { DiagnosticProfileDrawer } from "./DiagnosticProfileDrawer";
 import { AdminProfileDrawer } from "./AdminProfileDrawer";
+import { AIChatbot } from "./AIChatbot";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -173,6 +174,9 @@ export function DashboardLayout({
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
+
+      {/* AI Chatbot — patient portal only */}
+      {userRole?.toLowerCase() === "patient" && <AIChatbot />}
 
       {userRole?.toLowerCase() === "patient" ? (
         <PatientProfileDrawer
