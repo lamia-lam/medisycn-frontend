@@ -41,7 +41,7 @@ const features = [
   {
     icon: CalendarCheck,
     title: "Smart Scheduling",
-    desc: "AI-assisted appointment scheduling that reduces wait times and optimizes doctor availability.",
+    desc: "Smart appointment scheduling that reduces wait times and optimizes doctor availability.",
     color: "from-sky-400 to-sky-600",
     bg: "bg-sky-50",
   },
