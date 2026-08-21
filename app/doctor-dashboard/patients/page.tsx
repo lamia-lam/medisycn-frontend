@@ -90,7 +90,12 @@ export default function PatientsPage() {
   };
 
   const handleAddPatient = async () => {
-    if (!formData.name || !formData.age || !formData.gender || !formData.phone) {
+    if (
+      !formData.name ||
+      !formData.age ||
+      !formData.gender ||
+      !formData.phone
+    ) {
       alert("Please fill in all required fields");
       return;
     }
@@ -132,6 +137,30 @@ export default function PatientsPage() {
     } catch (err) {
       console.error(err);
       alert("An error occurred while adding patient");
+    }
+  };
+
+  const handleDeletePatient = async (dbId: number, name: string) => {
+    if (
+      !confirm(`Remove "${name}" from your patient list? This cannot be undone.`)
+    )
+      return;
+
+    try {
+      const res = await fetch(`/api/doctor/patients/${dbId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to remove patient");
+        return;
+      }
+
+      setPatients((prev) => prev.filter((p) => p.dbId !== dbId));
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while removing the patient");
     }
   };
 
@@ -177,19 +206,23 @@ export default function PatientsPage() {
             },
             {
               label: "Male Patients",
-              value: patients.filter((p) => p.gender.toLowerCase() === "male").length,
+              value: patients.filter((p) => p.gender.toLowerCase() === "male")
+                .length,
               color: "text-blue-600",
               bg: "bg-blue-50 dark:bg-blue-900/20",
             },
             {
               label: "Female Patients",
-              value: patients.filter((p) => p.gender.toLowerCase() === "female").length,
+              value: patients.filter((p) => p.gender.toLowerCase() === "female")
+                .length,
               color: "text-pink-600",
               bg: "bg-pink-50 dark:bg-pink-900/20",
             },
             {
               label: "Other Genders",
-              value: patients.filter((p) => !["male", "female"].includes(p.gender.toLowerCase())).length,
+              value: patients.filter(
+                (p) => !["male", "female"].includes(p.gender.toLowerCase()),
+              ).length,
               color: "text-purple-500",
               bg: "bg-purple-50 dark:bg-purple-900/20",
             },
@@ -325,13 +358,16 @@ export default function PatientsPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
+                        {/* <button
                           title="Edit"
                           className="p-2 rounded-lg text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/30 transition-colors"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
+                        </button> */}
                         <button
+                          onClick={() =>
+                            handleDeletePatient(patient.dbId, patient.name)
+                          }
                           title="Delete"
                           className="p-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition-colors"
                         >
@@ -371,7 +407,8 @@ export default function PatientsPage() {
                     Add New Patient
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Fill in the patient information below to add them to your patient list.
+                    Fill in the patient information below to add them to your
+                    patient list.
                   </p>
                 </div>
                 <button
@@ -392,7 +429,9 @@ export default function PatientsPage() {
                       type="text"
                       placeholder="Enter full name"
                       value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
                     />
                   </div>
@@ -418,7 +457,9 @@ export default function PatientsPage() {
                     </label>
                     <select
                       value={formData.gender}
-                      onChange={(e) => handleInputChange("gender", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("gender", e.target.value)
+                      }
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white appearance-none cursor-pointer"
                     >
                       <option value="" disabled>
@@ -438,7 +479,9 @@ export default function PatientsPage() {
                       type="tel"
                       placeholder="+1 (555) 123-4567"
                       value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
                       className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white placeholder-gray-400"
                     />
                   </div>
@@ -451,7 +494,9 @@ export default function PatientsPage() {
                   <input
                     type="date"
                     value={formData.dateOfBirth}
-                    onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("dateOfBirth", e.target.value)
+                    }
                     className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/40 dark:text-white"
                   />
                 </div>
@@ -494,7 +539,9 @@ export default function PatientsPage() {
                         {selectedPatient.id}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${selectedPatient.status === 'Active' ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                        <span
+                          className={`w-2 h-2 rounded-full ${selectedPatient.status === "Active" ? "bg-green-400" : "bg-gray-400"}`}
+                        ></span>
                         {selectedPatient.status}
                       </span>
                     </div>
@@ -517,34 +564,62 @@ export default function PatientsPage() {
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Age</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.age || "-"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Age
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.age || "-"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Gender</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.gender || "-"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Gender
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.gender || "-"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Date of Birth</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "-"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Date of Birth
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.dateOfBirth
+                          ? new Date(
+                              selectedPatient.dateOfBirth,
+                            ).toLocaleDateString()
+                          : "-"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Blood Group</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.bloodGroup || "-"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Blood Group
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.bloodGroup || "-"}
+                      </p>
                     </div>
                     <div className="col-span-2 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Contact Number</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.phone || "-"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Contact Number
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.phone || "-"}
+                      </p>
                     </div>
                     <div className="col-span-2 md:col-span-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Address</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.address || "No address provided"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Address
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.address || "No address provided"}
+                      </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <hr className="border-gray-100 dark:border-gray-700" />
-                
+
                 <div>
                   <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-5 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-cyan-600" />
@@ -552,12 +627,24 @@ export default function PatientsPage() {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-xl border border-cyan-100 dark:border-cyan-800/30">
-                      <p className="text-sm text-cyan-600 dark:text-cyan-400 mb-1 font-medium">Known Conditions</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.condition || "None recorded"}</p>
+                      <p className="text-sm text-cyan-600 dark:text-cyan-400 mb-1 font-medium">
+                        Known Conditions
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.condition || "None recorded"}
+                      </p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                      <p className="text-sm text-blue-600 dark:text-blue-400 mb-1 font-medium">Last Visit Date</p>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{selectedPatient.lastVisit ? new Date(selectedPatient.lastVisit).toLocaleDateString() : "-"}</p>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mb-1 font-medium">
+                        Last Visit Date
+                      </p>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {selectedPatient.lastVisit
+                          ? new Date(
+                              selectedPatient.lastVisit,
+                            ).toLocaleDateString()
+                          : "-"}
+                      </p>
                     </div>
                   </div>
                 </div>

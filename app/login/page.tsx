@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, AlertCircle } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -131,13 +131,22 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <button
               onClick={() => router.replace("/register")}
               className="text-cyan-600 font-medium"
             >
-              Don’t have an account? Register
+              Don't have an account? Register
             </button>
+            <div>
+              <button
+                onClick={() => router.push("/")}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-cyan-700 transition-colors group"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                Back to Home
+              </button>
+            </div>
           </div>
         </div>
       </div>

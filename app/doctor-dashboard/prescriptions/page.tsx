@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "../../components/DashboardLayout";
-import { PrescriptionDocument } from "../../components/PrescriptionDocument";
+import {
+  PrescriptionDocument,
+  PrescriptionData,
+  formatPrescription,
+} from "../../components/PrescriptionDocument";
 import {
   downloadPrescriptionPdf,
   getPrescriptionFilename,
@@ -83,7 +87,10 @@ function ToastContainer({
             <AlertTriangle className="w-4 h-4 shrink-0" />
           )}
           <span>{t.message}</span>
-          <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-80 hover:opacity-100">
+          <button
+            onClick={() => onDismiss(t.id)}
+            className="ml-2 opacity-80 hover:opacity-100"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -185,7 +192,10 @@ export default function PrescriptionsPage() {
   function showToast(type: ToastType, message: string) {
     const id = ++_toastId;
     setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+    setTimeout(
+      () => setToasts((prev) => prev.filter((t) => t.id !== id)),
+      4000,
+    );
   }
   function dismissToast(id: number) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -245,39 +255,7 @@ export default function PrescriptionsPage() {
       if (!res.ok) throw new Error("Failed to fetch prescription details");
       const data = await res.json();
 
-      setHiddenRxData({
-        id: rxInfo.id,
-        date: new Date(data.createdAt).toISOString().split("T")[0],
-        patient: {
-          name: data.patient.name,
-          id: `P${data.patient.id.toString().padStart(3, "0")}`,
-          age: data.patient.age || "-",
-          gender: data.patient.gender || "-",
-          phone: data.patient.phone || "-",
-          address: data.patient.address || "-",
-        },
-        doctor: {
-          name: data.doctor.name,
-          designation: data.doctor.designation || undefined,
-          department: data.doctor.department || undefined,
-          qualifications: data.doctor.qualifications || undefined,
-          specialization: data.doctor.specialization || "Doctor",
-          license: data.doctor.license || "-",
-          phone: data.doctor.phone || "-",
-        },
-        hospital: {
-          name: "MediSync Health Center",
-          address: "456 Healthcare Ave, Springfield, IL 62702",
-          phone: "+1 (555) 111-2222",
-          website: "www.medisync.health",
-        },
-        diagnosis: data.diagnosis,
-        symptoms: data.symptoms || "None reported",
-        medicines: data.medicines || [],
-        tests: data.tests || [],
-        notes: data.notes || "No additional notes.",
-        followUp: "As needed",
-      });
+      setHiddenRxData(formatPrescription(data, rxInfo.id));
     } catch (err) {
       console.error(err);
       showToast("error", "Failed to download prescription.");
@@ -291,7 +269,7 @@ export default function PrescriptionsPage() {
       setTimeout(() => {
         downloadPrescriptionPdf(
           hiddenPrescriptionRef.current!,
-          getPrescriptionFilename(hiddenRxData.id)
+          getPrescriptionFilename(hiddenRxData.id),
         )
           .then(() => showToast("success", "PDF downloaded successfully."))
           .catch((err) => {
@@ -311,18 +289,24 @@ export default function PrescriptionsPage() {
     if (!deleteTarget || isDeleting) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/doctor/prescription/${deleteTarget.realId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/doctor/prescription/${deleteTarget.realId}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to delete prescription");
       }
       // Remove from local state
       setPrescriptionsData((prev) =>
-        prev.filter((p) => p.realId !== deleteTarget.realId)
+        prev.filter((p) => p.realId !== deleteTarget.realId),
       );
-      showToast("success", `Prescription ${deleteTarget.id} deleted successfully.`);
+      showToast(
+        "success",
+        `Prescription ${deleteTarget.id} deleted successfully.`,
+      );
       setDeleteTarget(null);
     } catch (err: any) {
       showToast("error", err.message || "Failed to delete prescription.");
@@ -333,8 +317,12 @@ export default function PrescriptionsPage() {
 
   const filteredPrescriptions = prescriptionsData.filter((prescription) => {
     const matchesSearch =
-      (prescription.phone || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (prescription.patient || "").toLowerCase().includes(searchQuery.toLowerCase());
+      (prescription.phone || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (prescription.patient || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
     const matchesStatus =
       filterStatus === "all" ||
       (prescription.status || "").toLowerCase() === filterStatus;
@@ -439,7 +427,9 @@ export default function PrescriptionsPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm gap-4">
-                        <span className="text-gray-400 shrink-0">Diagnosis</span>
+                        <span className="text-gray-400 shrink-0">
+                          Diagnosis
+                        </span>
                         <span className="text-right font-medium text-gray-700 dark:text-gray-300 text-xs truncate max-w-[200px]">
                           {prescription.diagnosis}
                         </span>
@@ -458,7 +448,7 @@ export default function PrescriptionsPage() {
                       <button
                         onClick={() =>
                           router.push(
-                            `/doctor-dashboard/prescriptions/${prescription.realId}`
+                            `/doctor-dashboard/prescriptions/${prescription.realId}`,
                           )
                         }
                         className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border border-cyan-500 text-cyan-600 dark:text-cyan-400 rounded-lg hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 transition-colors text-sm font-medium"

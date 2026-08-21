@@ -212,7 +212,7 @@ export default function MedicalRecordViewer() {
                       456 Healthcare Ave, Springfield, IL 62702
                     </p>
                     <p className="text-sm text-gray-500">
-                      Phone: +1 (555) 111-2222 &nbsp;|&nbsp; www.medisync.health
+                      Phone: +880 1325 782878 &nbsp;|&nbsp; www.medisync.health
                     </p>
                   </div>
 

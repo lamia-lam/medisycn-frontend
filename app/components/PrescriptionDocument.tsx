@@ -22,15 +22,15 @@ export interface PrescriptionData {
     license?: string;
     phone?: string;
   };
-  hospital: {
-    name: string;
-    address: string;
+  hospital?: {
+    name?: string;
+    address?: string;
     phone?: string;
     website?: string;
   };
   diagnosis: string;
   symptoms?: string;
-  medicines: Array<{
+  medicines?: Array<{
     name?: string;
     strength?: string;
     dosage?: string;
@@ -40,7 +40,7 @@ export interface PrescriptionData {
     durationDays?: number | string;
     instructions?: string;
   }>;
-  tests: Array<{
+  tests?: Array<{
     name?: string;
     type?: string;
     urgency?: string;
@@ -50,10 +50,67 @@ export interface PrescriptionData {
   followUp?: string;
 }
 
+const DEFAULT_HOSPITAL = {
+  name: "MediSync Health Center",
+  address: "Dhaka, Bangladesh",
+  phone: "+880 1325 782878",
+  website: "www.medisync.health",
+};
+
+/** Helper to transform raw API response into a standardized PrescriptionData object */
+export function formatPrescription(data: any, customId?: string): PrescriptionData {
+  if (!data) return {} as PrescriptionData;
+
+  const rawId = customId || data.id || data.displayId || data.rxId || "";
+  const formattedId =
+    typeof rawId === "number" || (!rawId.toString().startsWith("RX") && !isNaN(Number(rawId)))
+      ? `RX-${rawId}`
+      : rawId.toString() || "RX-000";
+
+  const patientRawId = data.patient?.id || data.patient?.ref || "";
+  const formattedPatientId =
+    typeof patientRawId === "number" || (!patientRawId.toString().startsWith("P") && !isNaN(Number(patientRawId)))
+      ? `P${patientRawId.toString().padStart(3, "0")}`
+      : patientRawId.toString() || "-";
+
+  return {
+    id: formattedId,
+    date: data.createdAt
+      ? new Date(data.createdAt).toISOString().split("T")[0]
+      : data.date || new Date().toISOString().split("T")[0],
+    patient: {
+      name: data.patient?.name || "Unknown Patient",
+      id: formattedPatientId,
+      age: data.patient?.age || "-",
+      gender: data.patient?.gender || "-",
+      phone: data.patient?.phone || "-",
+      address: data.patient?.address || "-",
+      bloodGroup: data.patient?.bloodGroup || "-",
+    },
+    doctor: {
+      name: data.doctor?.name || "Doctor",
+      designation: data.doctor?.designation || undefined,
+      department: data.doctor?.department || undefined,
+      qualifications: data.doctor?.qualifications || undefined,
+      specialization: data.doctor?.specialization || "Doctor",
+      license: data.doctor?.license || "-",
+      phone: data.doctor?.phone || "-",
+    },
+    diagnosis: data.diagnosis || "-",
+    symptoms: data.symptoms || "None reported",
+    medicines: data.medicines || [],
+    tests: data.tests || [],
+    notes: data.notes || "No additional notes.",
+    followUp: data.followUp || "As needed",
+  };
+}
+
 export const PrescriptionDocument = forwardRef<
   HTMLDivElement,
   { rx: PrescriptionData }
 >(function PrescriptionDocument({ rx }, ref) {
+  const hospital = { ...DEFAULT_HOSPITAL, ...rx.hospital };
+
   const formatMedicineDuration = (med: any) => {
     if (med.duration) return med.duration;
     if (med.durationDays) return `${med.durationDays} Days`;
@@ -118,15 +175,15 @@ export const PrescriptionDocument = forwardRef<
         {/* Right: Hospital Info */}
         <div className="w-[40%] text-right">
           <h1 className="text-3xl font-bold text-[#0d7870] leading-tight uppercase">
-            {rx.hospital.name.split(" ")[0] || "HOSPITAL"}
+            {hospital.name?.split(" ")[0] || "HOSPITAL"}
           </h1>
           <p className="text-sm text-gray-400 uppercase tracking-[0.2em] mt-1 font-medium">
-            {rx.hospital.name.substring(rx.hospital.name.indexOf(" ") + 1) ||
-              "SLOGAN HERE"}
+            {hospital.name?.substring(hospital.name.indexOf(" ") + 1) ||
+              "HEALTH CENTER"}
           </p>
           <p className="text-[10px] text-gray-500 mt-4 leading-relaxed pl-4">
-            Lorem Ipsum is simply dummy text of the printing and typesetting
-            industry. Lorem Ipsum has been the industry's standard dummy text
+            Dedicated to providing comprehensive healthcare and personalized
+            medical excellence for every patient.
           </p>
         </div>
       </div>
@@ -140,7 +197,9 @@ export const PrescriptionDocument = forwardRef<
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Date:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">{rx.date}</span>
+          <span className="text-gray-700 text-xs whitespace-nowrap">
+            {rx.date}
+          </span>
         </div>
 
         <div className="w-[32%] px-2 flex gap-1 justify-center items-center min-w-0 font-bold">
@@ -156,7 +215,9 @@ export const PrescriptionDocument = forwardRef<
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Age:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">{rx.patient.age || "—"}</span>
+          <span className="text-gray-700 text-xs whitespace-nowrap">
+            {rx.patient.age || "—"}
+          </span>
         </div>
 
         <div className="w-[16%] px-2 text-center flex gap-1 justify-center items-center font-bold">
@@ -313,7 +374,10 @@ export const PrescriptionDocument = forwardRef<
                   const duration = formatMedicineDuration(med);
                   return (
                     <div key={idx}>
-                      <p className="font-bold text-gray-800 leading-6" style={{ lineHeight: "1.4" }}>
+                      <p
+                        className="font-bold text-gray-800 leading-6"
+                        style={{ lineHeight: "1.4" }}
+                      >
                         {idx + 1}. {med.name}{" "}
                         <span className="font-normal text-[#0d7870]">
                           {med.strength}
@@ -330,7 +394,10 @@ export const PrescriptionDocument = forwardRef<
                         </div>
                       )}
                       {med.instructions && (
-                        <p className="text-sm text-gray-500 pl-4 mt-0.5 flex items-center gap-1" style={{ lineHeight: "1.4" }}>
+                        <p
+                          className="text-sm text-gray-500 pl-4 mt-0.5 flex items-center gap-1"
+                          style={{ lineHeight: "1.4" }}
+                        >
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#0d7870] shrink-0" />
                           <span>{med.instructions}</span>
                         </p>
@@ -350,22 +417,20 @@ export const PrescriptionDocument = forwardRef<
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <Phone className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{rx.hospital.phone || "000-123-456-789"}</span>
-          <span>{rx.hospital.phone || "000-123-456-789"}</span>
+          <span>{hospital.phone}</span>
+          <span>{hospital.phone}</span>
         </div>
         <div className="flex flex-col items-center">
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <Globe className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{rx.hospital.website || "www. your name @ here"}</span>
-          <span>your web name here</span>
+          <span>{hospital.website}</span>
         </div>
         <div className="flex flex-col items-center text-center">
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <MapPin className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{rx.hospital.address || "10 Street Address Here"}</span>
-          <span>Country Name Here 6789</span>
+          <span>{hospital.address}</span>
         </div>
       </div>
 

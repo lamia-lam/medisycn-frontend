@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { DashboardLayout } from "../../components/DashboardLayout";
-import { PrescriptionDocument } from "../../components/PrescriptionDocument";
-import { downloadPrescriptionPdf, getPrescriptionFilename } from "../../lib/prescriptionExport";
+import {
+  PrescriptionDocument,
+  PrescriptionData,
+  formatPrescription,
+} from "../../components/PrescriptionDocument";
+import {
+  downloadPrescriptionPdf,
+  getPrescriptionFilename,
+} from "../../lib/prescriptionExport";
 import {
   Activity,
   Calendar,
@@ -16,15 +23,31 @@ import {
   Building2,
   HeartPulse,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const sidebarItems = [
-  { icon: <Activity className="w-5 h-5" />, label: "Dashboard", href: "/patient-dashboard" },
-  { icon: <Calendar className="w-5 h-5" />, label: "Appointments", href: "/patient-dashboard/appointments" },
-  { icon: <HeartPulse className="w-5 h-5" />, label: "Medical Records", href: "/patient-dashboard/records" },
-  { icon: <Pill className="w-5 h-5" />, label: "Prescriptions", href: "/patient-dashboard/prescriptions" },
+  {
+    icon: <Activity className="w-5 h-5" />,
+    label: "Dashboard",
+    href: "/patient-dashboard",
+  },
+  {
+    icon: <Calendar className="w-5 h-5" />,
+    label: "Appointments",
+    href: "/patient-dashboard/appointments",
+  },
+  {
+    icon: <HeartPulse className="w-5 h-5" />,
+    label: "Medical Records",
+    href: "/patient-dashboard/records",
+  },
+  {
+    icon: <Pill className="w-5 h-5" />,
+    label: "Prescriptions",
+    href: "/patient-dashboard/prescriptions",
+  },
 ];
 
 export default function PatientPrescriptions() {
@@ -47,42 +70,8 @@ export default function PatientPrescriptions() {
       const res = await fetch(`/api/patient/prescription/${rxInfo.realId}`);
       if (!res.ok) throw new Error("Failed to load prescription details");
       const data = await res.json();
-      
-      const transformedRx = {
-        id: rxInfo.id,
-        date: new Date(data.createdAt).toISOString().split('T')[0],
-        patient: {
-          name: data.patient.name,
-          id: `P${data.patient.id.toString().padStart(3, '0')}`,
-          age: data.patient.age || "-",
-          gender: data.patient.gender || "-",
-          phone: data.patient.phone || "-",
-          address: data.patient.address || "-",
-        },
-        doctor: {
-          name: data.doctor.name,
-          designation: data.doctor.designation || undefined,
-          department: data.doctor.department || undefined,
-          qualifications: data.doctor.qualifications || undefined,
-          specialization: data.doctor.specialization || "Doctor",
-          license: data.doctor.license || "-",
-          phone: data.doctor.phone || "-",
-        },
-        hospital: {
-          name: "MediSync Health Center",
-          address: "456 Healthcare Ave, Springfield, IL 62702",
-          phone: "+1 (555) 111-2222",
-          website: "www.medisync.health",
-        },
-        diagnosis: data.diagnosis,
-        symptoms: data.symptoms || "None reported",
-        medicines: data.medicines || [],
-        tests: data.tests || [],
-        notes: data.notes || "No additional notes.",
-        followUp: "As needed", 
-      };
 
-      setHiddenRxData(transformedRx);
+      setHiddenRxData(formatPrescription(data, rxInfo.id));
     } catch (err) {
       console.error(err);
       alert("Failed to download prescription.");
@@ -95,14 +84,16 @@ export default function PatientPrescriptions() {
       setTimeout(() => {
         downloadPrescriptionPdf(
           hiddenPrescriptionRef.current!,
-          getPrescriptionFilename(hiddenRxData.id)
-        ).catch(err => {
-          console.error(err);
-          alert("Failed to generate PDF");
-        }).finally(() => {
-          setDownloadingId(null);
-          setHiddenRxData(null);
-        });
+          getPrescriptionFilename(hiddenRxData.id),
+        )
+          .catch((err) => {
+            console.error(err);
+            alert("Failed to generate PDF");
+          })
+          .finally(() => {
+            setDownloadingId(null);
+            setHiddenRxData(null);
+          });
       }, 100);
     }
   }, [hiddenRxData]);
@@ -119,7 +110,7 @@ export default function PatientPrescriptions() {
           realId: p.id,
           department: p.doctor.specialization || "General Medicine",
           doctor: p.doctor.name,
-          date: new Date(p.createdAt).toISOString().split('T')[0],
+          date: new Date(p.createdAt).toISOString().split("T")[0],
         }));
 
         setPrescriptions(formatted);
@@ -171,7 +162,11 @@ export default function PatientPrescriptions() {
             },
             {
               label: "This Year",
-              value: loading ? "-" : prescriptions.filter((p) => p.date.startsWith(new Date().getFullYear().toString())).length,
+              value: loading
+                ? "-"
+                : prescriptions.filter((p) =>
+                    p.date.startsWith(new Date().getFullYear().toString()),
+                  ).length,
               color:
                 "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400",
             },
@@ -272,7 +267,9 @@ export default function PatientPrescriptions() {
                     <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <button
                         onClick={() =>
-                          router.push(`/patient-dashboard/prescriptions/${rx.realId}`)
+                          router.push(
+                            `/patient-dashboard/prescriptions/${rx.realId}`,
+                          )
                         }
                         className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium transition-colors"
                       >
@@ -315,7 +312,14 @@ export default function PatientPrescriptions() {
 
       {/* Hidden container for PDF generation */}
       {hiddenRxData && (
-        <div style={{ position: "absolute", left: "-9999px", top: 0, visibility: "hidden" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: 0,
+            visibility: "hidden",
+          }}
+        >
           <PrescriptionDocument ref={hiddenPrescriptionRef} rx={hiddenRxData} />
         </div>
       )}
