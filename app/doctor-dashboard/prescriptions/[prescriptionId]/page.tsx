@@ -58,12 +58,8 @@ export default function PrescriptionViewerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [zoom, setZoom] = useState(100);
-  const {
-    prescriptionRef,
-    handlePrint,
-    handleDownloadPdf,
-    isDownloading,
-  } = usePrescriptionExport(rx?.id ?? `RX-${prescriptionId}`);
+  const { prescriptionRef, handlePrint, handleDownloadPdf, isDownloading } =
+    usePrescriptionExport(rx?.id ?? `RX-${prescriptionId}`);
 
   useEffect(() => {
     if (!prescriptionId) return;

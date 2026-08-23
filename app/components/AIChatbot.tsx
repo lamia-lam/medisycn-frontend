@@ -1,251 +1,323 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, X, Minimize2, Stethoscope, Send, Sparkles } from "lucide-react";
+import {
+  MessageCircle,
+  X,
+  Minimize2,
+  Stethoscope,
+  Send,
+  User,
+  Bot,
+  AlertCircle,
+} from "lucide-react";
 
+type Specialty = { name: string; score: number };
+
+interface Message {
+  id: string;
+  role: "user" | "bot" | "error";
+  text: string;
+  specialties?: Specialty[];
+  parsedSymptom?: string;
+}
+
+const API_BASE = "http://127.0.0.1:8000";
+
+const INITIAL_MESSAGE: Message = {
+  id: "welcome",
+  role: "bot",
+  text: "Hi! I'm your MediSync AI assistant 👋\n\nDescribe your symptoms and I'll suggest which specialist you should visit.",
+};
+
+// ── Specialty Recommendation Breakdown ────────────────────────────────────
+function SpecialtyCard({ specialties }: { specialties: Specialty[] }) {
+  const maxScore = specialties[0]?.score ?? 1;
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden text-sm w-full">
+      <div className="px-3 py-2 bg-gradient-to-r from-cyan-50 to-cyan-100 border-b border-cyan-100">
+        <p className="font-semibold text-cyan-700 text-xs uppercase tracking-wide">
+          Recommended Specialists
+        </p>
+      </div>
+
+      <ul className="divide-y divide-gray-50">
+        {specialties.map((spec, i) => {
+          const pct = Math.round((spec.score / maxScore) * 100);
+          const isTop = i === 0;
+
+          return (
+            <li key={spec.name} className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-gray-800">{spec.name}</span>
+                <span
+                  className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 ${isTop
+                      ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
+                    }`}
+                >
+                  {spec.score.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${pct}%`,
+                    backgroundColor: isTop ? "#06b6d4" : "#94a3b8",
+                  }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="text-[10px] text-gray-400 px-3 py-2 bg-gray-50 border-t border-gray-100">
+        ⚠️ For informational purposes only. Always consult a qualified doctor.
+      </p>
+    </div>
+  );
+}
+
+// ── Chat Bubble ─────────────────────────────────────────────────────────────
+function ChatBubble({ msg }: { msg: Message }) {
+  const isUser = msg.role === "user";
+  const isError = msg.role === "error";
+
+  return (
+    <div className={`flex gap-2 items-start ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+      <span
+        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs mt-0.5 ${isUser
+            ? "bg-cyan-600"
+            : isError
+              ? "bg-red-500"
+              : "bg-gradient-to-br from-cyan-500 to-cyan-700"
+          }`}
+      >
+        {isUser ? (
+          <User className="w-3.5 h-3.5" />
+        ) : isError ? (
+          <AlertCircle className="w-3.5 h-3.5" />
+        ) : (
+          <Bot className="w-3.5 h-3.5" />
+        )}
+      </span>
+
+      <div className={`max-w-[85%] flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
+        {msg.parsedSymptom && (
+          <p className="text-[10px] text-gray-400 italic px-1">
+            Parsed symptom: &ldquo;{msg.parsedSymptom}&rdquo;
+          </p>
+        )}
+        <div
+          className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-line ${isUser
+              ? "bg-cyan-600 text-white rounded-tr-sm"
+              : isError
+                ? "bg-red-50 text-red-700 border border-red-200 rounded-tl-sm"
+                : "bg-white border border-gray-200 text-gray-700 shadow-sm rounded-tl-sm"
+            }`}
+        >
+          {msg.text}
+        </div>
+        {msg.specialties && msg.specialties.length > 0 && (
+          <SpecialtyCard specialties={msg.specialties} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main AIChatbot Component ────────────────────────────────────────────────
 export function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto scroll on new messages
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isOpen) setHasUnread(true);
-    }, 8000);
-    return () => clearTimeout(timer);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 150);
+    }
   }, [isOpen]);
 
-  const toggleChat = () => {
-    if (isOpen) {
-      setIsAnimating(false);
-      setTimeout(() => setIsOpen(false), 250);
-    } else {
-      setIsOpen(true);
-      setHasUnread(false);
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => setIsAnimating(true))
+  const handleSendMessage = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+
+    // 1. Add user message to state
+    const userMsgId = Math.random().toString(36).slice(2);
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", text }]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      // Step A: Hit /parse endpoint to standardize input text
+      const parseRes = await fetch(
+        `${API_BASE}/parse?text=${encodeURIComponent(text)}`
       );
+      if (!parseRes.ok) throw new Error("Parse API failed");
+      const parsedSymptom = await parseRes.json();
+
+      // Step B: Hit /classify endpoint with parsed symptom
+      const classifyRes = await fetch(
+        `${API_BASE}/classify?text=${encodeURIComponent(parsedSymptom)}`
+      );
+      if (!classifyRes.ok) throw new Error("Classify API failed");
+      const classifyData: Record<string, number> = await classifyRes.json();
+
+      // Step C: Format & sort specialties
+      const specialties: Specialty[] = Object.entries(classifyData)
+        .map(([name, score]) => ({ name, score }))
+        .sort((a, b) => b.score - a.score);
+
+      const topSpecialist = specialties[0]?.name ?? "a specialist";
+
+      // 2. Add AI response to state
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).slice(2),
+          role: "bot",
+          text: `Based on your symptoms, I recommend consulting a **${topSpecialist}**. Here is the prediction breakdown:`,
+          parsedSymptom: String(parsedSymptom),
+          specialties,
+        },
+      ]);
+    } catch {
+      // 3. Add error message if server is offline or fails
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).slice(2),
+          role: "error",
+          text: "Sorry, unable to connect to the AI service. Please make sure FastAPI is running at http://127.0.0.1:8000.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
   return (
     <>
-      {/* ── Chatbot Window ─────────────────────────────────────────────── */}
+      {/* ── Chat Window Modal ────────────────────────────────────────────── */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 flex flex-col"
-          style={{
-            width: "clamp(320px, 90vw, 380px)",
-            maxHeight: "min(550px, 85vh)",
-            opacity: isAnimating ? 1 : 0,
-            transform: isAnimating
-              ? "scale(1) translateY(0)"
-              : "scale(0.92) translateY(16px)",
-            transformOrigin: "bottom right",
-            transition:
-              "opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-          }}
+          className="fixed bottom-24 right-6 z-50 flex flex-col w-[380px] max-w-[90vw] h-[520px] max-h-[80vh] bg-slate-50 dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
           role="dialog"
           aria-label="MediSync AI Chatbot"
-          aria-modal="false"
         >
-          <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-
-            {/* ── Header ─────────────────────────────────────────────── */}
-            <div className="relative bg-gradient-to-r from-cyan-700 via-cyan-600 to-cyan-500 px-4 py-3.5 shrink-0 overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-12 translate-x-10 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-white/10 translate-y-8 -translate-x-6 pointer-events-none" />
-
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                    <Stethoscope
-                      className="text-white"
-                      style={{ width: "18px", height: "18px" }}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold text-sm leading-tight">
-                      MediSync Assistant
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span className="text-cyan-100 text-[11px] font-medium">
-                        Coming soon
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={toggleChat}
-                  id="chatbot-close-btn"
-                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 active:bg-white/40 flex items-center justify-center text-white transition-colors cursor-pointer"
-                  aria-label="Close chatbot"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* ── Empty / Coming Soon State ─────────────────────────── */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 gap-4 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/30 dark:to-cyan-800/20 border border-cyan-100 dark:border-cyan-800/40 flex items-center justify-center shadow-sm">
-                <Sparkles className="w-7 h-7 text-cyan-500" />
+          {/* Header */}
+          <div className="bg-gradient-to-r from-cyan-700 to-cyan-500 px-4 py-3.5 flex items-center justify-between text-white shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-800 dark:text-white text-base mb-1">
-                  AI Chat Coming Soon
-                </p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 leading-relaxed max-w-[240px]">
-                  Your intelligent health assistant is being set up. Check back shortly!
-                </p>
-              </div>
-              <div className="flex gap-1.5 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <p className="font-semibold text-sm">MediSync Assistant</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-cyan-100 text-[11px]">AI Online</span>
+                </div>
               </div>
             </div>
 
-            {/* ── Divider ───────────────────────────────────────────── */}
-            <div className="h-px bg-gray-100 dark:bg-gray-700 mx-4 shrink-0" />
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer"
+              aria-label="Close Chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-            {/* ── Disabled Input Area ───────────────────────────────── */}
-            <div className="px-4 py-3 shrink-0 bg-white dark:bg-gray-800/60">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Type your health question..."
-                  id="chatbot-input"
-                  aria-label="Chat message input"
-                  className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400 dark:focus:border-cyan-600 transition-all"
-                />
-                <button
-                  id="chatbot-send-btn"
-                  disabled
-                  aria-label="Send message (coming soon)"
-                  className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60 shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+          {/* Message List */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+            {messages.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
+            ))}
+
+            {/* Loading Indicator */}
+            {loading && (
+              <div className="flex gap-2 items-center">
+                <span className="w-7 h-7 rounded-full bg-cyan-600 flex items-center justify-center text-white">
+                  <Bot className="w-3.5 h-3.5" />
+                </span>
+                <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm flex gap-1 items-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
               </div>
-              <p className="text-[10px] text-gray-400 mt-2 text-center">
-                AI-powered health assistant — launching soon.
-              </p>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
+            <div className="flex items-center gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe your symptoms..."
+                disabled={loading}
+                className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={loading || !input.trim()}
+                className="w-9 h-9 rounded-xl bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-200 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors"
+                aria-label="Send Message"
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
+            <p className="text-[10px] text-gray-400 text-center mt-1.5">
+              Press Enter to send · Powered by MediSync FastAPI
+            </p>
           </div>
         </div>
       )}
 
       {/* ── Floating Toggle Button ──────────────────────────────────────── */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-
-        {/* Tooltip label — visible only when closed */}
         {!isOpen && (
-          <div
-            className="flex items-center gap-1.5 bg-gray-900/80 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg pointer-events-none"
-            style={{
-              opacity: 1,
-              animation: "fadeSlideUp 0.4s ease forwards",
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+          <div className="bg-gray-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg pointer-events-none flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Ask MediSync AI
           </div>
         )}
 
-        {/* Button */}
         <button
-          id="chatbot-toggle-btn"
-          onClick={toggleChat}
-          aria-label={isOpen ? "Close MediSync Assistant" : "Open MediSync Assistant"}
-          aria-expanded={isOpen}
-          className="relative flex items-center justify-center cursor-pointer
-            transition-all duration-300 active:scale-95
-            focus:outline-none group"
-          style={{ width: "64px", height: "64px" }}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Close Assistant" : "Open Assistant"}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-700 text-white shadow-xl hover:shadow-cyan-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
         >
-          {/* Outer glow ring */}
-          {!isOpen && (
-            <span
-              className="absolute inset-0 rounded-full pointer-events-none"
-              style={{
-                background: "rgba(6,182,212,0.18)",
-                animation: "outerPulse 2.4s ease-in-out infinite",
-                transform: "scale(1.35)",
-              }}
-            />
-          )}
-
-          {/* Mid glow ring */}
-          {!isOpen && (
-            <span
-              className="absolute inset-0 rounded-full pointer-events-none"
-              style={{
-                background: "rgba(6,182,212,0.28)",
-                animation: "outerPulse 2.4s ease-in-out 0.6s infinite",
-                transform: "scale(1.15)",
-              }}
-            />
-          )}
-
-          {/* Main circle */}
-          <span
-            className="relative w-16 h-16 rounded-full flex items-center justify-center overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
-              boxShadow: isOpen
-                ? "0 4px 16px rgba(6,182,212,0.35)"
-                : "0 6px 32px rgba(6,182,212,0.55), 0 2px 8px rgba(14,116,144,0.4)",
-              transition: "box-shadow 0.3s ease",
-            }}
-          >
-            {/* Shimmer sweep */}
-            {!isOpen && (
-              <span
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background:
-                    "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
-                  animation: "shimmer 2.8s ease-in-out infinite",
-                }}
-              />
-            )}
-
-            {/* Icon */}
-            <span className="relative z-10 text-white transition-transform duration-300 group-hover:scale-110">
-              {isOpen ? (
-                <Minimize2 style={{ width: "22px", height: "22px" }} />
-              ) : (
-                <MessageCircle style={{ width: "26px", height: "26px" }} />
-              )}
-            </span>
-          </span>
-
-          {/* Unread badge */}
-          {hasUnread && !isOpen && (
-            <span className="absolute top-0 right-0 w-5 h-5 rounded-full bg-amber-400 border-2 border-white text-white text-[10px] flex items-center justify-center font-bold shadow-md z-20">
-              !
-            </span>
-          )}
+          {isOpen ? <Minimize2 className="w-5 h-5" /> : <MessageCircle className="w-6 h-6" />}
         </button>
       </div>
-
-      {/* Keyframe animations */}
-      <style>{`
-        @keyframes outerPulse {
-          0%, 100% { opacity: 0.7; transform: scale(1.15); }
-          50%       { opacity: 0;   transform: scale(1.5);  }
-        }
-        @keyframes shimmer {
-          0%   { transform: translateX(-100%) skewX(-15deg); }
-          60%, 100% { transform: translateX(200%) skewX(-15deg); }
-        }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </>
   );
 }
+
