@@ -8,7 +8,6 @@ import {
   Package,
   History,
   User,
-  Phone,
   Calendar,
   FileText,
   Eye,
@@ -109,10 +108,7 @@ export default function PatientSearch() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-col sm:flex-row gap-3 mb-6"
-          >
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -189,17 +185,24 @@ export default function PatientSearch() {
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800/40">
-                      {patient.bloodGroup}
-                    </span>
+                    {patient.bloodGroup && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-800/40">
+                        {patient.bloodGroup}
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-2.5 gap-x-4 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <User className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>
-                        {patient.age} yrs, {patient.gender}
+                        {patient.age != null ? `${patient.age} yrs` : "—"}
+                        {patient.gender ? `, ${patient.gender}` : ""}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Stethoscope className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="truncate">{patient.doctorName}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />

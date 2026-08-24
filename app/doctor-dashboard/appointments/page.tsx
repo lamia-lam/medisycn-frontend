@@ -13,7 +13,6 @@ import {
   Check,
   X,
   Phone,
-  Printer,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -73,7 +72,6 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [actionLoading, setActionLoading] = useState(false);
-  const [printingDate, setPrintingDate] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/doctor/appointments")
@@ -147,23 +145,14 @@ export default function AppointmentsPage() {
   }, {} as Record<string, Appointment[]>);
 
   const stats = {
-    pending: filtered.filter((a) => a.status === "Pending").length,
-    confirmed: filtered.filter((a) => a.status === "Confirmed").length,
-    cancelled: filtered.filter((a) => a.status === "Cancelled").length,
-  };
-
-  const handlePrint = (dateStr: string) => {
-    setPrintingDate(dateStr);
-    setTimeout(() => {
-      window.print();
-      setPrintingDate(null);
-    }, 100);
+    total: appointments.length,
+    pending: appointments.filter((a) => a.status === "Pending").length,
+    confirmed: appointments.filter((a) => a.status === "Confirmed").length,
+    cancelled: appointments.filter((a) => a.status === "Cancelled").length,
   };
 
   return (
-    <>
-      <div className={printingDate ? "print:hidden" : ""}>
-        <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
+    <DashboardLayout sidebarItems={sidebarItems} userRole="Doctor">
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -176,8 +165,9 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
+            { label: "Total", value: stats.total, icon: <Calendar className="w-5 h-5 text-cyan-500" />, bg: "bg-cyan-50 dark:bg-cyan-900/20", iconBg: "bg-cyan-100 dark:bg-cyan-900/40", valueColor: "text-cyan-600" },
             { label: "Pending", value: stats.pending, icon: <Clock className="w-5 h-5 text-yellow-500" />, bg: "bg-yellow-50 dark:bg-yellow-900/20", iconBg: "bg-yellow-100 dark:bg-yellow-900/40", valueColor: "text-yellow-600" },
             { label: "Confirmed", value: stats.confirmed, icon: <Check className="w-5 h-5 text-green-500" />, bg: "bg-green-50 dark:bg-green-900/20", iconBg: "bg-green-100 dark:bg-green-900/40", valueColor: "text-green-600" },
             { label: "Cancelled", value: stats.cancelled, icon: <X className="w-5 h-5 text-red-500" />, bg: "bg-red-50 dark:bg-red-900/20", iconBg: "bg-red-100 dark:bg-red-900/40", valueColor: "text-red-600" },
@@ -245,27 +235,17 @@ export default function AppointmentsPage() {
             ) : (
               Object.entries(groupedByDate).map(([dateStr, apts]) => (
                 <div key={dateStr} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      {dateStr}
-                    </h3>
-                    <button
-                      onClick={() => handlePrint(dateStr)}
-                      className="print:hidden flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-cyan-700 bg-cyan-50 dark:bg-cyan-900/30 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 rounded-md transition-colors shadow-sm"
-                      title="Print Appointments for this day"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Print
-                    </button>
-                  </div>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    {dateStr}
+                  </h3>
                   <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400 min-w-[700px]">
                       <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                           <th className="px-5 py-3.5 font-medium w-24">Serial No</th>
                           <th className="px-5 py-3.5 font-medium">Patient</th>
-                          <th className="px-5 py-3.5 font-medium">Phone Number</th>
+                          <th className="px-5 py-3.5 font-medium">Time</th>
                           <th className="px-5 py-3.5 font-medium">Type</th>
                           <th className="px-5 py-3.5 font-medium">Status</th>
                           <th className="px-5 py-3.5 font-medium text-right w-28">Action</th>
@@ -289,16 +269,16 @@ export default function AppointmentsPage() {
                                 <div>
                                   <p className="font-medium text-gray-800 dark:text-gray-200">{apt.patientName}</p>
                                   <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-gray-400 mt-0.5">
-                                    {apt.patientGender && <span>{apt.patientGender}</span>}
-                                    {apt.patientGender && apt.patientBloodGroup && <span>•</span>}
-                                    {apt.patientBloodGroup && <span>Blood: {apt.patientBloodGroup}</span>}
+                                    {apt.patientPhone && <span>{apt.patientPhone}</span>}
+                                    {apt.patientGender && <span>• {apt.patientGender}</span>}
+                                    {apt.patientBloodGroup && <span>• Blood: {apt.patientBloodGroup}</span>}
                                   </div>
                                   {apt.notes && <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 max-w-[220px] truncate" title={apt.notes}>{apt.notes}</p>}
                                 </div>
                               </div>
                             </td>
                             <td className="px-5 py-4 font-medium">
-                              {apt.patientPhone || "—"}
+                              {new Date(apt.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </td>
                             <td className="px-5 py-4">
                               {apt.type ? (
@@ -343,56 +323,6 @@ export default function AppointmentsPage() {
           </div>
         </div>
       </div>
-        </DashboardLayout>
-      </div>
-
-      {/* Print View Container */}
-      {printingDate && (
-        <div className="hidden print:block p-8 bg-white text-black min-h-screen">
-          <div className="border-b-2 border-gray-200 pb-6 mb-8 flex justify-between items-end">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">MediSync</h1>
-              <p className="text-gray-600 text-lg">Daily Appointment Schedule</p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-xl text-gray-800">{printingDate}</p>
-            </div>
-          </div>
-
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-3 font-semibold text-gray-800 w-24">Serial No</th>
-                <th className="border border-gray-300 px-4 py-3 font-semibold text-gray-800">Patient</th>
-                <th className="border border-gray-300 px-4 py-3 font-semibold text-gray-800 w-32">Phone</th>
-                <th className="border border-gray-300 px-4 py-3 font-semibold text-gray-800 w-40">Type</th>
-                <th className="border border-gray-300 px-4 py-3 font-semibold text-gray-800 w-32">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedByDate[printingDate]?.map(apt => (
-                <tr key={apt.id}>
-                  <td className="border border-gray-300 px-4 py-3 font-medium">
-                    {apt.serialNo ? `#${apt.serialNo}` : "—"}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">
-                    {apt.patientName}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 font-medium">
-                    {apt.patientPhone || "—"}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    {apt.type || "—"}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    {apt.status}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
+    </DashboardLayout>
   );
 }

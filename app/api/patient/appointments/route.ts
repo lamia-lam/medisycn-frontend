@@ -86,29 +86,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validate that appointment date is within [today, today + 7 days]
-  const appointmentDate = new Date(date);
-  const now = new Date();
-  
-  // Start of today (local server time)
-  const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  
-  // End of 7 days from now (local server time)
-  const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59, 999);
-
-  if (appointmentDate < minDate || appointmentDate > maxDate) {
-    return NextResponse.json(
-      { error: "Appointments can only be booked up to 1 week in advance." },
-      { status: 400 },
-    );
-  }
-
   // create the appointment — always starts as Pending
   const appointment = await prisma.appointment.create({
     data: {
       doctorId: parseInt(doctorId),
       patientId: patient.id,
-      date: appointmentDate,
+      date: new Date(date),
       type: type ?? "In-Person",
       notes: notes ?? null,
       status: "Pending",

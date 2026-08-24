@@ -60,7 +60,7 @@ interface PatientInfo {
   patientId: string;
 }
 
-const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Time slots are now generated dynamically based on the doctor's schedule.
 
 const serviceTypes = [
   "General Checkup",
@@ -69,6 +69,15 @@ const serviceTypes = [
   "Consultation",
   "Emergency Visit",
 ];
+
+// converts "09:00 AM" → "09:00" for datetime combining
+function convertTo24Hour(time: string): string {
+  const [timePart, modifier] = time.split(" ");
+  let [hours, minutes] = timePart.split(":").map(Number);
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
 
 export default function BookAppointment() {
   const router = useRouter();
@@ -86,6 +95,7 @@ export default function BookAppointment() {
     department: "",
     doctorId: "",
     date: "",
+    time: "",
     serviceType: "",
     notes: "",
   });
@@ -136,43 +146,19 @@ export default function BookAppointment() {
     e.preventDefault();
     setError("");
 
+    if (!formData.time) {
+      setError("Please select a time slot.");
+      return;
+    }
     if (!formData.doctorId) {
       setError("Please select a doctor.");
       return;
     }
 
-    // block submission if date doesn't match doctor's schedule
-    if (selectedDoctor && formData.date && scheduleDays.length > 0) {
-      const [y, m, d] = formData.date.split("-").map(Number);
-      const pickedDay = daysOfWeek[new Date(y, m - 1, d).getDay()];
-      if (!scheduleDays.includes(pickedDay)) {
-        setError(`${selectedDoctor.user.name} is only available on ${scheduleDays.join(" and ")}. Please pick a valid date.`);
-        return;
-      }
-    }
-
     setSubmitting(true);
 
-    // date validation
-    const getLocalDateString = (d: Date) => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
-    const todayStr = getLocalDateString(new Date());
-    const maxDateObj = new Date();
-    maxDateObj.setDate(maxDateObj.getDate() + 7);
-    const maxDateStr = getLocalDateString(maxDateObj);
-
-    if (formData.date < todayStr || formData.date > maxDateStr) {
-      setError("Appointments can only be booked up to 1 week in advance.");
-      setSubmitting(false);
-      return;
-    }
-
-    // combine date with a default time into one ISO datetime string
-    const dateTime = `${formData.date}T00:00:00`;
+    // combine date + time into one ISO datetime string
+    const dateTime = `${formData.date}T${convertTo24Hour(formData.time)}:00`;
 
     const res = await fetch("/api/patient/appointments", {
       method: "POST",
@@ -199,17 +185,7 @@ export default function BookAppointment() {
     }, 1800);
   };
 
-  const getLocalDateString = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
-  const today = getLocalDateString(new Date());
-  const maxDateObj = new Date();
-  maxDateObj.setDate(maxDateObj.getDate() + 7);
-  const maxDate = getLocalDateString(maxDateObj);
+  const today = new Date().toISOString().split("T")[0];
 
   // ── selected doctor name for success message ─────────────
   const selectedDoctor = doctors.find(
@@ -240,16 +216,37 @@ export default function BookAppointment() {
     return `${displayHours}:${m} ${suffix}`;
   };
 
-  // ── schedule-day validation ──────────────────────────────
-  const scheduleDays = doctorSchedule.map((s: any) => s.day as string);
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  let dateError = "";
-  if (selectedDoctor && formData.date && scheduleDays.length > 0) {
+  const generateTimeSlots = (start24: string, end24: string) => {
+    const slots = [];
+    let [h, m] = start24.split(":").map(Number);
+    const [eh, em] = end24.split(":").map(Number);
+    
+    let currentMinutes = h * 60 + m;
+    const endMinutes = eh * 60 + em;
+    
+    while (currentMinutes <= endMinutes - 30) {
+        const hh = Math.floor(currentMinutes / 60);
+        const mm = currentMinutes % 60;
+        const suffix = hh >= 12 ? "PM" : "AM";
+        const displayH = hh % 12 || 12;
+        slots.push(`${String(displayH).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${suffix}`);
+        currentMinutes += 30;
+    }
+    return slots;
+  };
+
+  let availableTimeSlots: string[] = [];
+  if (selectedDoctor && formData.date) {
     const [year, month, day] = formData.date.split("-").map(Number);
     if (year && month && day) {
-      const pickedDay = daysOfWeek[new Date(year, month - 1, day).getDay()];
-      if (!scheduleDays.includes(pickedDay)) {
-        dateError = `${selectedDoctor.user.name} is only available on ${scheduleDays.join(" and ")}. Please pick a valid date.`;
+      const dateObj = new Date(year, month - 1, day);
+      const dayName = daysOfWeek[dateObj.getDay()];
+      
+      const dayAvailability = doctorSchedule.find((a: any) => a.day === dayName);
+      if (dayAvailability) {
+        availableTimeSlots = generateTimeSlots(dayAvailability.start, dayAvailability.end);
       }
     }
   }
@@ -274,6 +271,10 @@ export default function BookAppointment() {
               on{" "}
               <span className="font-medium text-gray-700 dark:text-gray-200">
                 {formData.date}
+              </span>{" "}
+              at{" "}
+              <span className="font-medium text-gray-700 dark:text-gray-200">
+                {formData.time}
               </span>{" "}
               has been submitted. Waiting for doctor confirmation.
             </p>
@@ -462,16 +463,9 @@ export default function BookAppointment() {
                       setFormData({ ...formData, date: e.target.value })
                     }
                     min={today}
-                    max={maxDate}
                     className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     required
                   />
-                  {dateError && (
-                    <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg mt-2 flex items-start gap-2">
-                      <span className="shrink-0 mt-0.5">⚠️</span>
-                      {dateError}
-                    </p>
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -493,6 +487,36 @@ export default function BookAppointment() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Time Slots */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <Clock className="w-4 h-4 inline mr-1.5 text-gray-400" />
+                  Time Slot
+                  {!formData.time && (
+                    <span className="text-red-400 ml-1 text-xs font-normal">
+                      * required
+                    </span>
+                  )}
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                  {availableTimeSlots.length > 0 ? availableTimeSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, time: slot })}
+                      className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${formData.time === slot
+                          ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
+                          : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/10"
+                        }`}
+                    >
+                      {slot}
+                    </button>
+                  )) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 col-span-full">No time slots available for the selected doctor.</p>
+                  )}
                 </div>
               </div>
 
@@ -533,7 +557,7 @@ export default function BookAppointment() {
             </button>
             <button
               type="submit"
-              disabled={submitting || !!dateError}
+              disabled={!formData.time || submitting}
               className="px-8 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
             >
               {submitting ? "Submitting..." : "Confirm Appointment"}

@@ -22,15 +22,15 @@ export interface PrescriptionData {
     license?: string;
     phone?: string;
   };
-  hospital?: {
-    name?: string;
-    address?: string;
+  hospital: {
+    name: string;
+    address: string;
     phone?: string;
     website?: string;
   };
   diagnosis: string;
   symptoms?: string;
-  medicines?: Array<{
+  medicines: Array<{
     name?: string;
     strength?: string;
     dosage?: string;
@@ -40,7 +40,7 @@ export interface PrescriptionData {
     durationDays?: number | string;
     instructions?: string;
   }>;
-  tests?: Array<{
+  tests: Array<{
     name?: string;
     type?: string;
     urgency?: string;
@@ -50,67 +50,10 @@ export interface PrescriptionData {
   followUp?: string;
 }
 
-const DEFAULT_HOSPITAL = {
-  name: "MediSync Health Center",
-  address: "Dhaka, Bangladesh",
-  phone: "+880 1325 782878",
-  website: "www.medisync.health",
-};
-
-/** Helper to transform raw API response into a standardized PrescriptionData object */
-export function formatPrescription(data: any, customId?: string): PrescriptionData {
-  if (!data) return {} as PrescriptionData;
-
-  const rawId = customId || data.id || data.displayId || data.rxId || "";
-  const formattedId =
-    typeof rawId === "number" || (!rawId.toString().startsWith("RX") && !isNaN(Number(rawId)))
-      ? `RX-${rawId}`
-      : rawId.toString() || "RX-000";
-
-  const patientRawId = data.patient?.id || data.patient?.ref || "";
-  const formattedPatientId =
-    typeof patientRawId === "number" || (!patientRawId.toString().startsWith("P") && !isNaN(Number(patientRawId)))
-      ? `P${patientRawId.toString().padStart(3, "0")}`
-      : patientRawId.toString() || "-";
-
-  return {
-    id: formattedId,
-    date: data.createdAt
-      ? new Date(data.createdAt).toISOString().split("T")[0]
-      : data.date || new Date().toISOString().split("T")[0],
-    patient: {
-      name: data.patient?.name || "Unknown Patient",
-      id: formattedPatientId,
-      age: data.patient?.age || "-",
-      gender: data.patient?.gender || "-",
-      phone: data.patient?.phone || "-",
-      address: data.patient?.address || "-",
-      bloodGroup: data.patient?.bloodGroup || "-",
-    },
-    doctor: {
-      name: data.doctor?.name || "Doctor",
-      designation: data.doctor?.designation || undefined,
-      department: data.doctor?.department || undefined,
-      qualifications: data.doctor?.qualifications || undefined,
-      specialization: data.doctor?.specialization || "Doctor",
-      license: data.doctor?.license || "-",
-      phone: data.doctor?.phone || "-",
-    },
-    diagnosis: data.diagnosis || "-",
-    symptoms: data.symptoms || "None reported",
-    medicines: data.medicines || [],
-    tests: data.tests || [],
-    notes: data.notes || "No additional notes.",
-    followUp: data.followUp || "As needed",
-  };
-}
-
 export const PrescriptionDocument = forwardRef<
   HTMLDivElement,
   { rx: PrescriptionData }
 >(function PrescriptionDocument({ rx }, ref) {
-  const hospital = { ...DEFAULT_HOSPITAL, ...rx.hospital };
-
   const formatMedicineDuration = (med: any) => {
     if (med.duration) return med.duration;
     if (med.durationDays) return `${med.durationDays} Days`;
@@ -133,15 +76,23 @@ export const PrescriptionDocument = forwardRef<
       style={{ width: "210mm", minHeight: "297mm", backgroundColor: "#ffffff" }}
     >
       {/* Top Graphic Border */}
-      <svg
-        viewBox="0 0 1000 30"
-        className="w-full h-[30px]"
-        preserveAspectRatio="none"
-      >
-        <polygon points="0,0 150,0 110,30 0,30" fill="#1b8c85" />
-        <polygon points="150,0 850,0 810,30 110,30" fill="#0d7870" />
-        <polygon points="850,0 1000,0 1000,30 810,30" fill="#114b47" />
-      </svg>
+      <div className="w-full flex h-[30px]">
+        <div
+          className="w-[15%] h-full bg-[#1b8c85]"
+          style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }}
+        ></div>
+        <div
+          className="w-[70%] h-full bg-[#0d7870] ml-[-20px]"
+          style={{
+            clipPath:
+              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[15%] h-full bg-[#114b47] ml-[-20px]"
+          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
+        ></div>
+      </div>
 
       {/* Header */}
       <div className="px-10 py-8 flex items-start justify-between">
@@ -175,65 +126,62 @@ export const PrescriptionDocument = forwardRef<
         {/* Right: Hospital Info */}
         <div className="w-[40%] text-right">
           <h1 className="text-3xl font-bold text-[#0d7870] leading-tight uppercase">
-            {hospital.name?.split(" ")[0] || "HOSPITAL"}
+            {rx.hospital.name.split(" ")[0] || "HOSPITAL"}
           </h1>
           <p className="text-sm text-gray-400 uppercase tracking-[0.2em] mt-1 font-medium">
-            {hospital.name?.substring(hospital.name.indexOf(" ") + 1) ||
-              "HEALTH CENTER"}
+            {rx.hospital.name.substring(rx.hospital.name.indexOf(" ") + 1) ||
+              "SLOGAN HERE"}
           </p>
           <p className="text-[10px] text-gray-500 mt-4 leading-relaxed pl-4">
-            Dedicated to providing comprehensive healthcare and personalized
-            medical excellence for every patient.
+            Lorem Ipsum is simply dummy text of the printing and typesetting
+            industry. Lorem Ipsum has been the industry's standard dummy text
           </p>
         </div>
       </div>
 
       {/* Patient Info Row */}
       <div
-        className="prescription-patient-row mx-10 border-t-2 border-b-2 border-gray-300 flex items-center
+        className="mx-10 border-t-2 border-b-2 border-gray-300 grid
+             grid-cols-[1.2fr_2fr_0.9fr_1fr_1.2fr]
              divide-x-2 divide-gray-300 py-1.5 mt-2"
       >
-        <div className="w-[19%] px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Date:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">
-            {rx.date}
-          </span>
+          <span className="text-gray-700 text-xs">{rx.date}</span>
         </div>
 
-        <div className="w-[32%] px-2 flex gap-1 justify-center items-center min-w-0 font-bold">
+        <div className="px-2 flex gap-1 items-center min-w-0 font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Patient Name:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">
+          <span className="text-gray-700 text-xs truncate">
             {rx.patient.name}
           </span>
         </div>
 
-        <div className="w-[14%] px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Age:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">
-            {rx.patient.age || "—"}
-          </span>
+          <span className="text-gray-700 text-xs">{rx.patient.age || "—"}</span>
         </div>
 
-        <div className="w-[16%] px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Gender:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">
+          <span className="text-gray-700 text-xs">
             {rx.patient.gender || "—"}
           </span>
         </div>
 
-        <div className="w-[19%] px-2 text-center flex gap-1 justify-center items-center font-bold">
+        <div className="px-2 text-center flex gap-1 justify-center items-center font-bold">
           <span className="text-[#0d7870] font-medium-bold text-xs whitespace-nowrap">
             Blood Group:
           </span>
-          <span className="text-gray-700 text-xs whitespace-nowrap">
+          <span className="text-gray-700 text-xs">
             {rx.patient.bloodGroup || "—"}
           </span>
         </div>
@@ -245,47 +193,13 @@ export const PrescriptionDocument = forwardRef<
         style={{ minHeight: "calc(100% - 280px)" }}
       >
         {/* Background Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 mt-20">
-          <svg
-            viewBox="0 0 500 500"
-            className="w-[500px] h-[500px] opacity-[0.03] text-[#0d7870]"
-          >
-            {/* Outer circle */}
-            <circle
-              cx="250"
-              cy="250"
-              r="235"
-              stroke="currentColor"
-              strokeWidth="15"
-              fill="none"
-            />
-            {/* Inner circle */}
-            <circle
-              cx="250"
-              cy="250"
-              r="190"
-              stroke="currentColor"
-              strokeWidth="10"
-              fill="none"
-            />
-            {/* Cross (plus sign) */}
-            <rect
-              x="202"
-              y="90"
-              width="96"
-              height="320"
-              rx="8"
-              fill="currentColor"
-            />
-            <rect
-              x="90"
-              y="202"
-              width="320"
-              height="96"
-              rx="8"
-              fill="currentColor"
-            />
-          </svg>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-[0.03] z-0 mt-20">
+          <div className="w-[500px] h-[500px] rounded-full border-[15px] border-[#0d7870] flex items-center justify-center p-8">
+            <div className="w-full h-full rounded-full border-[10px] border-[#0d7870] flex items-center justify-center relative">
+              <div className="absolute w-24 h-80 bg-[#0d7870] rounded-lg"></div>
+              <div className="absolute h-24 w-80 bg-[#0d7870] rounded-lg"></div>
+            </div>
+          </div>
         </div>
 
         {/* Left Panel — Symptoms & Tests (Inv:) */}
@@ -374,10 +288,7 @@ export const PrescriptionDocument = forwardRef<
                   const duration = formatMedicineDuration(med);
                   return (
                     <div key={idx}>
-                      <p
-                        className="font-bold text-gray-800 leading-6"
-                        style={{ lineHeight: "1.4" }}
-                      >
+                      <p className="font-bold text-gray-800">
                         {idx + 1}. {med.name}{" "}
                         <span className="font-normal text-[#0d7870]">
                           {med.strength}
@@ -394,12 +305,9 @@ export const PrescriptionDocument = forwardRef<
                         </div>
                       )}
                       {med.instructions && (
-                        <p
-                          className="text-sm text-gray-500 pl-4 mt-0.5 flex items-center gap-1"
-                          style={{ lineHeight: "1.4" }}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#0d7870] shrink-0" />
-                          <span>{med.instructions}</span>
+                        <p className="text-sm text-gray-500 pl-4 mt-0.5 flex items-start gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-[#0d7870] mt-1 flex-shrink-0" />
+                          {med.instructions}
                         </p>
                       )}
                     </div>
@@ -417,33 +325,45 @@ export const PrescriptionDocument = forwardRef<
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <Phone className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{hospital.phone}</span>
-          <span>{hospital.phone}</span>
+          <span>{rx.hospital.phone || "000-123-456-789"}</span>
+          <span>{rx.hospital.phone || "000-123-456-789"}</span>
         </div>
         <div className="flex flex-col items-center">
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <Globe className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{hospital.website}</span>
+          <span>{rx.hospital.website || "www. your name @ here"}</span>
+          <span>your web name here</span>
         </div>
         <div className="flex flex-col items-center text-center">
           <div className="border border-[#0d7870] rounded p-1 mb-1">
             <MapPin className="w-3 h-3 text-[#0d7870]" />
           </div>
-          <span>{hospital.address}</span>
+          <span>{rx.hospital.address || "10 Street Address Here"}</span>
+          <span>Country Name Here 6789</span>
         </div>
       </div>
 
       {/* Bottom Graphic Border */}
-      <svg
-        viewBox="0 0 1000 30"
-        className="absolute bottom-0 left-0 w-full h-[30px] z-20"
-        preserveAspectRatio="none"
-      >
-        <polygon points="0,0 240,0 220,30 0,30" fill="#1b8c85" />
-        <polygon points="240,0 740,0 720,30 220,30" fill="#0d7870" />
-        <polygon points="740,0 1000,0 1000,30 720,30" fill="#114b47" />
-      </svg>
+      <div className="absolute bottom-0 left-0 w-full flex h-[30px] z-20">
+        <div
+          className="w-[30%] h-full bg-[#1b8c85]"
+          style={{
+            clipPath: "polygon(0 0, 80% 0, calc(80% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[50%] h-full bg-[#0d7870] ml-[-20px]"
+          style={{
+            clipPath:
+              "polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0% 100%)",
+          }}
+        ></div>
+        <div
+          className="w-[30%] h-full bg-[#114b47] ml-[-20px]"
+          style={{ clipPath: "polygon(20px 0, 100% 0, 100% 100%, 0% 100%)" }}
+        ></div>
+      </div>
     </div>
   );
 });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, User, Phone, Briefcase, ArrowLeft } from "lucide-react";
+import { Lock, Mail, User, Phone, Briefcase } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -263,22 +263,13 @@ export default function RegisterPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center space-y-3">
+          <div className="mt-6 text-center">
             <button
               onClick={() => router.replace("/login")}
               className="text-cyan-600 font-medium"
             >
               Already have an account? Sign in
             </button>
-            <div>
-              <button
-                onClick={() => router.push("/")}
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-cyan-700 transition-colors group underline underline-offset-2"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-                Back to Home
-              </button>
-            </div>
           </div>
         </div>
       </div>

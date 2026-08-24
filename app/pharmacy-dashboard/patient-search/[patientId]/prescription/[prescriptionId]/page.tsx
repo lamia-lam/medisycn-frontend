@@ -20,10 +20,7 @@ import {
   Download,
 } from "lucide-react";
 import { DashboardLayout } from "../../../../../components/DashboardLayout";
-import {
-  PrescriptionDocument,
-  formatPrescription,
-} from "../../../../../components/PrescriptionDocument";
+import { PrescriptionDocument } from "../../../../../components/PrescriptionDocument";
 import { usePrescriptionExport } from "../../../../../hooks/usePrescriptionExport";
 
 const sidebarItems = [
@@ -49,6 +46,11 @@ const sidebarItems = [
   },
 ];
 
+const HOSPITAL = {
+  name: "MediSync Health Center",
+  address: "456 Healthcare Ave, Springfield, IL 62702",
+  website: "www.medisync.health",
+};
 
 type Medicine = {
   name?: string;
@@ -292,20 +294,32 @@ export default function ViewPrescriptionPage() {
           >
             <PrescriptionDocument
               ref={prescriptionRef}
-              rx={formatPrescription({
-                ...rx,
+              rx={{
                 id: rx.displayId,
+                date: rx.date,
                 patient: {
-                  ...rx.patient,
+                  name: rx.patient.name,
                   id: rx.patient.ref,
+                  age: rx.patient.age || undefined,
+                  gender: rx.patient.gender || undefined,
+                  bloodGroup: rx.patient.bloodGroup || undefined,
                 },
                 doctor: {
-                  ...rx.doctor,
+                  name: rx.doctor.name,
+                  designation: rx.doctor.designation || undefined,
+                  department: rx.doctor.department || undefined,
+                  qualifications: rx.doctor.qualifications || undefined,
                   specialization: doctorSpecialization,
+                  license: rx.doctor.license || undefined,
                 },
-                symptoms,
-                notes,
-              })}
+                hospital: HOSPITAL,
+                diagnosis: rx.diagnosis,
+                symptoms: symptoms,
+                medicines: rx.medicines,
+                tests: rx.tests,
+                notes: notes,
+                followUp: "As needed"
+              }}
             />
           </div>
         </div>

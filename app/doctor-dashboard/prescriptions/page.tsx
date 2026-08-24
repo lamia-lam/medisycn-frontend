@@ -1,16 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../components/DashboardLayout";
-import {
-  PrescriptionDocument,
-  PrescriptionData,
-  formatPrescription,
-} from "../../components/PrescriptionDocument";
-import {
-  downloadPrescriptionPdf,
-  getPrescriptionFilename,
-} from "../../lib/prescriptionExport";
 import { Badge } from "../../components/Badge";
 import {
   Activity,
@@ -18,15 +9,14 @@ import {
   FileText,
   Calendar,
   Search,
+  Filter,
   Plus,
   Eye,
+  Edit,
   Trash2,
   Download,
   Pill,
   Loader2,
-  AlertTriangle,
-  CheckCircle2,
-  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -53,121 +43,6 @@ const sidebarItems = [
   },
 ];
 
-// ─── Toast ──────────────────────────────────────────────────────────────────
-type ToastType = "success" | "error";
-interface Toast {
-  id: number;
-  type: ToastType;
-  message: string;
-}
-
-let _toastId = 0;
-
-function ToastContainer({
-  toasts,
-  onDismiss,
-}: {
-  toasts: Toast[];
-  onDismiss: (id: number) => void;
-}) {
-  return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
-            t.type === "success"
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          {t.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-          ) : (
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-          )}
-          <span>{t.message}</span>
-          <button
-            onClick={() => onDismiss(t.id)}
-            className="ml-2 opacity-80 hover:opacity-100"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Confirm Delete Modal ───────────────────────────────────────────────────
-function ConfirmDeleteModal({
-  prescription,
-  isDeleting,
-  onConfirm,
-  onCancel,
-}: {
-  prescription: any;
-  isDeleting: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={!isDeleting ? onCancel : undefined}
-      />
-      {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <AlertTriangle className="w-7 h-7 text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
-              Delete Prescription
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Are you sure you want to delete prescription{" "}
-              <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">
-                {prescription?.id}
-              </span>{" "}
-              for{" "}
-              <span className="font-semibold text-gray-700 dark:text-gray-200">
-                {prescription?.patient}
-              </span>
-              ? This action cannot be undone.
-            </p>
-          </div>
-          <div className="flex gap-3 w-full mt-1">
-            <button
-              onClick={onCancel}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              {isDeleting ? "Deleting..." : "Delete"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ──────────────────────────────────────────────────────────────
 export default function PrescriptionsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,31 +52,6 @@ export default function PrescriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Download state
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [hiddenRxData, setHiddenRxData] = useState<any>(null);
-  const hiddenPrescriptionRef = useRef<HTMLDivElement>(null);
-
-  // Delete state
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Toasts
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  function showToast(type: ToastType, message: string) {
-    const id = ++_toastId;
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(
-      () => setToasts((prev) => prev.filter((t) => t.id !== id)),
-      4000,
-    );
-  }
-  function dismissToast(id: number) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
-
-  // ── Fetch Prescriptions ──
   useEffect(() => {
     async function fetchPrescriptions() {
       try {
@@ -209,10 +59,14 @@ export default function PrescriptionsPage() {
         if (!res.ok) throw new Error("Failed to load prescriptions");
         const data = await res.json();
 
+        // Map the backend data to the format used in the UI
         const mappedData = data.map((p: any) => {
           let medicinesCount = 0;
-          if (Array.isArray(p.medicines)) medicinesCount = p.medicines.length;
+          if (Array.isArray(p.medicines)) {
+            medicinesCount = p.medicines.length;
+          }
 
+          // Generate initials from patient name
           const initials = p.patient.name
             ? p.patient.name
                 .split(" ")
@@ -231,8 +85,8 @@ export default function PrescriptionsPage() {
             date: new Date(p.createdAt).toISOString().split("T")[0],
             diagnosis: p.diagnosis,
             medicines: medicinesCount,
-            initials,
-            avatarColor: "bg-cyan-100 text-cyan-700",
+            initials: initials,
+            avatarColor: "bg-cyan-100 text-cyan-700", // Defaulting color, could be randomized
           };
         });
 
@@ -246,83 +100,10 @@ export default function PrescriptionsPage() {
     fetchPrescriptions();
   }, []);
 
-  // ── Download PDF ──
-  const handleDownloadClick = async (rxInfo: any) => {
-    if (downloadingId) return;
-    setDownloadingId(rxInfo.id);
-    try {
-      const res = await fetch(`/api/doctor/prescription/${rxInfo.realId}`);
-      if (!res.ok) throw new Error("Failed to fetch prescription details");
-      const data = await res.json();
-
-      setHiddenRxData(formatPrescription(data, rxInfo.id));
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Failed to download prescription.");
-      setDownloadingId(null);
-    }
-  };
-
-  // Trigger PDF generation once hidden element is mounted
-  useEffect(() => {
-    if (hiddenRxData && hiddenPrescriptionRef.current) {
-      setTimeout(() => {
-        downloadPrescriptionPdf(
-          hiddenPrescriptionRef.current!,
-          getPrescriptionFilename(hiddenRxData.id),
-        )
-          .then(() => showToast("success", "PDF downloaded successfully."))
-          .catch((err) => {
-            console.error(err);
-            showToast("error", "Failed to generate PDF.");
-          })
-          .finally(() => {
-            setDownloadingId(null);
-            setHiddenRxData(null);
-          });
-      }, 100);
-    }
-  }, [hiddenRxData]);
-
-  // ── Delete ──
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget || isDeleting) return;
-    setIsDeleting(true);
-    try {
-      const res = await fetch(
-        `/api/doctor/prescription/${deleteTarget.realId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete prescription");
-      }
-      // Remove from local state
-      setPrescriptionsData((prev) =>
-        prev.filter((p) => p.realId !== deleteTarget.realId),
-      );
-      showToast(
-        "success",
-        `Prescription ${deleteTarget.id} deleted successfully.`,
-      );
-      setDeleteTarget(null);
-    } catch (err: any) {
-      showToast("error", err.message || "Failed to delete prescription.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const filteredPrescriptions = prescriptionsData.filter((prescription) => {
     const matchesSearch =
-      (prescription.phone || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      (prescription.patient || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      (prescription.phone || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (prescription.patient || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       filterStatus === "all" ||
       (prescription.status || "").toLowerCase() === filterStatus;
@@ -457,20 +238,19 @@ export default function PrescriptionsPage() {
                         View
                       </button>
                       <button
-                        title="Download PDF"
-                        onClick={() => handleDownloadClick(prescription)}
-                        disabled={downloadingId === prescription.id}
-                        className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                        title="Edit"
+                        className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                       >
-                        {downloadingId === prescription.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        title="Download PDF"
+                        className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
                       </button>
                       <button
                         title="Delete"
-                        onClick={() => setDeleteTarget(prescription)}
                         className="p-2 border border-red-200 dark:border-red-900/50 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -498,33 +278,6 @@ export default function PrescriptionsPage() {
           )}
         </div>
       </div>
-
-      {/* Hidden DOM node for PDF generation */}
-      {hiddenRxData && (
-        <div
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: 0,
-            visibility: "hidden",
-          }}
-        >
-          <PrescriptionDocument ref={hiddenPrescriptionRef} rx={hiddenRxData} />
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <ConfirmDeleteModal
-          prescription={deleteTarget}
-          isDeleting={isDeleting}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => !isDeleting && setDeleteTarget(null)}
-        />
-      )}
-
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </DashboardLayout>
   );
 }

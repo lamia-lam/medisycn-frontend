@@ -51,7 +51,6 @@ export default function PatientDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,13 +58,11 @@ export default function PatientDashboard() {
       fetch("/api/patient/profile").then((res) => res.json()),
       fetch("/api/patient/appointments").then((res) => res.json()),
       fetch("/api/patient/prescription").then((res) => res.json()),
-      fetch("/api/patient/records").then((res) => res.json()),
     ])
-      .then(([profileData, aptsData, rxData, recordsData]) => {
+      .then(([profileData, aptsData, rxData]) => {
         setProfile(profileData);
         setAppointments(Array.isArray(aptsData) ? aptsData : []);
         setPrescriptions(Array.isArray(rxData) ? rxData : []);
-        setRecords(Array.isArray(recordsData) ? recordsData : []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -108,20 +105,23 @@ export default function PatientDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             icon={<Calendar className="w-6 h-6" />}
-            label="Total appointments"
+            label="Upcoming Appointments"
             value={appointments.length}
+            trend="Total appointments"
             color="bg-cyan-500"
           />
           <StatCard
             icon={<FileText className="w-6 h-6" />}
-            label="Total Prescriptions"
+            label="Active Prescriptions"
             value={prescriptions.length}
+            trend="Total prescriptions"
             color="bg-blue-500"
           />
           <StatCard
             icon={<HeartPulse className="w-6 h-6" />}
-            label=" Total Records"
-            value={records.length}
+            label="Medical Records"
+            value={8}
+            trend="+1 this month"
             color="bg-green-500"
           />
           <StatCard
@@ -132,6 +132,7 @@ export default function PatientDashboard() {
                 ? new Date(appointments[0].date).toLocaleDateString()
                 : "N/A"
             }
+            trend={appointments.length > 0 ? appointments[0].doctorName : "N/A"}
             color="bg-purple-500"
           />
         </div>

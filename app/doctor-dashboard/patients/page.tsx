@@ -140,34 +140,11 @@ export default function PatientsPage() {
     }
   };
 
-  const handleDeletePatient = async (dbId: number, name: string) => {
-    if (
-      !confirm(`Remove "${name}" from your patient list? This cannot be undone.`)
-    )
-      return;
-
-    try {
-      const res = await fetch(`/api/doctor/patients/${dbId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error || "Failed to remove patient");
-        return;
-      }
-
-      setPatients((prev) => prev.filter((p) => p.dbId !== dbId));
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred while removing the patient");
-    }
-  };
-
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.phone.includes(searchQuery);
+      patient.phone.includes(searchQuery) ||
+      patient.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGender =
       filterGender === "all" || patient.gender.toLowerCase() === filterGender;
     return matchesSearch && matchesGender;
@@ -358,16 +335,13 @@ export default function PatientsPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {/* <button
+                        <button
                           title="Edit"
                           className="p-2 rounded-lg text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/30 transition-colors"
                         >
                           <Edit className="w-4 h-4" />
-                        </button> */}
+                        </button>
                         <button
-                          onClick={() =>
-                            handleDeletePatient(patient.dbId, patient.name)
-                          }
                           title="Delete"
                           className="p-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition-colors"
                         >
@@ -586,8 +560,8 @@ export default function PatientsPage() {
                       <p className="font-semibold text-gray-800 dark:text-gray-200">
                         {selectedPatient.dateOfBirth
                           ? new Date(
-                              selectedPatient.dateOfBirth,
-                            ).toLocaleDateString()
+                            selectedPatient.dateOfBirth,
+                          ).toLocaleDateString()
                           : "-"}
                       </p>
                     </div>
@@ -641,8 +615,8 @@ export default function PatientsPage() {
                       <p className="font-semibold text-gray-800 dark:text-gray-200">
                         {selectedPatient.lastVisit
                           ? new Date(
-                              selectedPatient.lastVisit,
-                            ).toLocaleDateString()
+                            selectedPatient.lastVisit,
+                          ).toLocaleDateString()
                           : "-"}
                       </p>
                     </div>
