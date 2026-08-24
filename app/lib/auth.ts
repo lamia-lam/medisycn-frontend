@@ -104,7 +104,8 @@ export async function getDiagnostic(req: NextRequest) {
   } catch {
     return { error: NextResponse.json({ error: "Invalid token" }, { status: 401 }) };
   }
-
+   console.log("Decoded token:", decoded);
+   
   if (decoded.role !== "DIAGNOSTIC") {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

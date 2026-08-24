@@ -114,15 +114,17 @@ export async function downloadPrescriptionPdf(
   element: HTMLElement,
   filename: string,
 ): Promise<void> {
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+  const [{ default: html2canvas}, { jsPDF }] = await Promise.all([
     import("html2canvas-pro"),
     import("jspdf"),
   ]);
+  
 
   const { iframe, card } = createPrescriptionIframe(element);
 
   try {
     await waitForIframeRender();
+  
 
     const canvas = await html2canvas(card, {
       scale: 1.5,
@@ -134,6 +136,7 @@ export async function downloadPrescriptionPdf(
       backgroundColor: "#ffffff",
       logging: false,
     });
+
 
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
     const pdf = new jsPDF({
