@@ -6,27 +6,13 @@ export async function POST(req: Request) {
   try {
     const { name, email, phone, password, role, license } = await req.json();
 
-    console.log("===== REGISTER API HIT =====");
-    console.log({
-      name,
-      email,
-      phone,
-      password,
-      role,
-    });
-
     const normalizedRole = String(role || "").toUpperCase() as Role;
 
     const allowedRoles = Object.values(Role);
 
     // Validate role
     if (!allowedRoles.includes(normalizedRole)) {
-      console.log("Invalid Role:", normalizedRole);
-
-      return Response.json(
-        { error: "Invalid role" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Invalid role" }, { status: 400 });
     }
 
     // Check existing user
@@ -37,12 +23,7 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      console.log("User already exists.");
-
-      return Response.json(
-        { error: "User already exists" },
-        { status: 400 }
-      );
+      return Response.json({ error: "User already exists" }, { status: 400 });
     }
 
     // Hash password
@@ -63,13 +44,8 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log("===== USER CREATED =====");
-    console.log(user);
-
     // Auto-create doctor profile
     if (normalizedRole === "DOCTOR") {
-      console.log("Creating Doctor Profile...");
-
       await prisma.doctor.create({
         data: {
           userId: user.id,
@@ -80,8 +56,6 @@ export async function POST(req: Request) {
 
     // Auto-create patient profile
     if (normalizedRole === "PATIENT") {
-      console.log("Creating Patient Profile...");
-
       await prisma.patient.create({
         data: {
           userId: user.id,
@@ -91,8 +65,6 @@ export async function POST(req: Request) {
 
     // Auto-create pharmacy profile
     if (normalizedRole === "PHARMACY") {
-      console.log("Creating Pharmacy Profile...");
-
       await prisma.pharmacy.create({
         data: {
           userId: user.id,
@@ -111,20 +83,13 @@ export async function POST(req: Request) {
       });
     }
 
-    console.log("===== REGISTRATION SUCCESSFUL =====");
-
     return Response.json({
       success: true,
       user,
     });
-
   } catch (error) {
-    console.error("===== REGISTRATION ERROR =====");
     console.error(error);
 
-    return Response.json(
-      { error: "Registration failed" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Registration failed" }, { status: 500 });
   }
 }
