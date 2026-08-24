@@ -19,7 +19,11 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { PrescriptionDocument } from "../../../components/PrescriptionDocument";
+import {
+  PrescriptionDocument,
+  PrescriptionData,
+  formatPrescription,
+} from "../../../components/PrescriptionDocument";
 import { usePrescriptionExport } from "../../../hooks/usePrescriptionExport";
 
 const sidebarItems = [
@@ -54,12 +58,8 @@ export default function PrescriptionViewerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [zoom, setZoom] = useState(100);
-  const {
-    prescriptionRef,
-    handlePrint,
-    handleDownloadPdf,
-    isDownloading,
-  } = usePrescriptionExport(rx?.id ?? `RX-${prescriptionId}`);
+  const { prescriptionRef, handlePrint, handleDownloadPdf, isDownloading } =
+    usePrescriptionExport(rx?.id ?? `RX-${prescriptionId}`);
 
   useEffect(() => {
     if (!prescriptionId) return;
@@ -69,40 +69,7 @@ export default function PrescriptionViewerPage() {
         const res = await fetch(`/api/doctor/prescription/${prescriptionId}`);
         if (!res.ok) throw new Error("Failed to load prescription details");
         const data = await res.json();
-
-        // Transform for UI
-        setRx({
-          id: `RX-${data.id}`,
-          date: new Date(data.createdAt).toISOString().split("T")[0],
-          patient: {
-            name: data.patient.name,
-            id: `P${data.patient.id.toString().padStart(3, "0")}`,
-            age: data.patient.age || "-",
-            gender: data.patient.gender || "-",
-            phone: data.patient.phone || "-",
-            address: data.patient.address || "-",
-          },
-          doctor: {
-            name: data.doctor.name,
-            designation: data.doctor.designation || undefined,
-            department: data.doctor.department || undefined,
-            qualifications: data.doctor.qualifications || undefined,
-            specialization: data.doctor.specialization || "Doctor",
-            license: data.doctor.license || "-",
-            phone: data.doctor.phone || "-",
-          },
-          hospital: {
-            name: "MediSync Health Center",
-            address: "456 Healthcare Ave, Springfield, IL 62702",
-            phone: "+1 (555) 111-2222",
-          },
-          diagnosis: data.diagnosis,
-          symptoms: data.symptoms || "None reported",
-          medicines: data.medicines || [],
-          tests: data.tests || [],
-          notes: data.notes || "No additional notes.",
-          followUp: "As needed", // Not in schema currently, could be added later
-        });
+        setRx(formatPrescription(data));
       } catch (err: any) {
         setError(err.message || "Failed to load prescription");
       } finally {

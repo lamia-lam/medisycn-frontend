@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, AlertCircle } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,34 +14,55 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
-    console.log("LOGIN RESPONSE:", data);
+      const text = await res.text();
+      let data: { error?: string; token?: string; role?: string } = {};
 
-    if (!res.ok) {
-      setError(data.error);
-      return;
-    }
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          setError("Unexpected server response. Please try again.");
+          return;
+        }
+      } else if (!res.ok) {
+        setError("Login failed. Please try again.");
+        return;
+      }
 
-    document.cookie = `token=${data.token}; path=/; max-age=86400`;
-    //document.cookie = `role=${String(data.role).toLowerCase()}; path=/; max-age=86400; SameSite=Strict`;
-    if (data.role === "DOCTOR") {
-      router.replace("/doctor-dashboard");
-    } else if (data.role === "PATIENT") {
-      router.replace("/patient-dashboard");
-    } else if (data.role === "DIAGNOSTIC" || data.role === "diagnostic") {
-      router.replace("/diagnosis-dashboard");
-    } else if (data.role === "PHARMACY" || data.role === "pharmacy") {
-      router.replace("/pharmacy-dashboard");
-    } else if (data.role === "ADMIN" || data.role === "admin") {
-      router.replace("/admin-dashboard");
-    } else {
-      setError("Unknown role");
+      if (!res.ok) {
+        setError(data.error || "Login failed");
+        return;
+      }
+
+      if (!data.token || !data.role) {
+        setError("Invalid login response from server.");
+        return;
+      }
+
+      document.cookie = `token=${data.token}; path=/; max-age=86400`;
+
+      if (data.role === "DOCTOR") {
+        router.replace("/doctor-dashboard");
+      } else if (data.role === "PATIENT") {
+        router.replace("/patient-dashboard");
+      } else if (data.role === "DIAGNOSTIC" || data.role === "diagnostic") {
+        router.replace("/diagnosis-dashboard");
+      } else if (data.role === "PHARMACY" || data.role === "pharmacy") {
+        router.replace("/pharmacy-dashboard");
+      } else if (data.role === "ADMIN" || data.role === "admin") {
+        router.replace("/admin-dashboard");
+      } else {
+        setError("Unknown role");
+      }
+    } catch {
+      setError("Unable to reach the server. Please try again.");
     }
   };
 
@@ -75,6 +96,7 @@ export default function LoginPage() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="email"
+                  value={email}
                   placeholder="Enter your email"
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -90,7 +112,8 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="password"
-                  placeholder="Passwords"
+                  value={password}
+                  placeholder="Password"
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -108,13 +131,22 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <button
               onClick={() => router.replace("/register")}
               className="text-cyan-600 font-medium"
             >
-              Don’t have an account? Register
+              Don't have an account? Register
             </button>
+            <div>
+              <button
+                onClick={() => router.push("/")}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-cyan-700 transition-colors group"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                Back to Home
+              </button>
+            </div>
           </div>
         </div>
       </div>

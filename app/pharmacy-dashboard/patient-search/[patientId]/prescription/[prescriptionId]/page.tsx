@@ -20,7 +20,10 @@ import {
   Download,
 } from "lucide-react";
 import { DashboardLayout } from "../../../../../components/DashboardLayout";
-import { PrescriptionDocument } from "../../../../../components/PrescriptionDocument";
+import {
+  PrescriptionDocument,
+  formatPrescription,
+} from "../../../../../components/PrescriptionDocument";
 import { usePrescriptionExport } from "../../../../../hooks/usePrescriptionExport";
 
 const sidebarItems = [
@@ -46,11 +49,6 @@ const sidebarItems = [
   },
 ];
 
-const HOSPITAL = {
-  name: "MediSync Health Center",
-  address: "456 Healthcare Ave, Springfield, IL 62702",
-  website: "www.medisync.health",
-};
 
 type Medicine = {
   name?: string;
@@ -294,32 +292,20 @@ export default function ViewPrescriptionPage() {
           >
             <PrescriptionDocument
               ref={prescriptionRef}
-              rx={{
+              rx={formatPrescription({
+                ...rx,
                 id: rx.displayId,
-                date: rx.date,
                 patient: {
-                  name: rx.patient.name,
+                  ...rx.patient,
                   id: rx.patient.ref,
-                  age: rx.patient.age || undefined,
-                  gender: rx.patient.gender || undefined,
-                  bloodGroup: rx.patient.bloodGroup || undefined,
                 },
                 doctor: {
-                  name: rx.doctor.name,
-                  designation: rx.doctor.designation || undefined,
-                  department: rx.doctor.department || undefined,
-                  qualifications: rx.doctor.qualifications || undefined,
+                  ...rx.doctor,
                   specialization: doctorSpecialization,
-                  license: rx.doctor.license || undefined,
                 },
-                hospital: HOSPITAL,
-                diagnosis: rx.diagnosis,
-                symptoms: symptoms,
-                medicines: rx.medicines,
-                tests: rx.tests,
-                notes: notes,
-                followUp: "As needed"
-              }}
+                symptoms,
+                notes,
+              })}
             />
           </div>
         </div>

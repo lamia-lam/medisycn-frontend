@@ -8,7 +8,6 @@ const footerLinks = {
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#how-it-works" },
     { label: "Dashboards", href: "#dashboards" },
-    { label: "Pricing", href: "#" },
   ],
   Roles: [
     { label: "For Doctors", href: "/register" },
@@ -38,8 +37,8 @@ export default function Footer() {
               <span className="text-xl font-bold text-white">MediSync</span>
             </div>
             <p className="text-gray-400 mb-6 max-w-sm leading-relaxed">
-              Connecting every corner of healthcare — from consultations
-              to prescriptions to diagnostics — on one unified platform.
+              Connecting every corner of healthcare — from consultations to
+              prescriptions to diagnostics — on one unified platform.
             </p>
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-2">

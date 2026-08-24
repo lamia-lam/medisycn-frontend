@@ -40,7 +40,7 @@ export function DoctorProfileDrawer({
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  
   const [isAddingTime, setIsAddingTime] = useState(false);
   const [newTimeBlock, setNewTimeBlock] = useState({ day: "Sunday", start: "", end: "" });
 
@@ -173,19 +173,21 @@ export function DoctorProfileDrawer({
         <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-[152px] z-10 shrink-0">
           <button
             onClick={() => setActiveTab("profile")}
-            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${activeTab === "profile"
-              ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              }`}
+            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${
+              activeTab === "profile"
+                ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            }`}
           >
             Profile Details
           </button>
           <button
             onClick={() => setActiveTab("password")}
-            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${activeTab === "password"
-              ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              }`}
+            className={`flex-1 px-4 py-3.5 text-sm font-medium transition-colors ${
+              activeTab === "password"
+                ? "border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            }`}
           >
             Security & Password
           </button>
@@ -320,7 +322,7 @@ export function DoctorProfileDrawer({
                     </button>
                   )}
                 </div>
-
+                
                 <div className="space-y-2">
                   {formData.availability.length === 0 && !isAddingTime ? (
                     <div className="text-center py-4 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 border-dashed">
@@ -335,9 +337,9 @@ export function DoctorProfileDrawer({
                         <button
                           type="button"
                           onClick={() => {
-                            const newAv = [...formData.availability];
-                            newAv.splice(index, 1);
-                            setFormData({ ...formData, availability: newAv });
+                             const newAv = [...formData.availability];
+                             newAv.splice(index, 1);
+                             setFormData({...formData, availability: newAv});
                           }}
                           className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                           title="Remove Time"
@@ -388,8 +390,8 @@ export function DoctorProfileDrawer({
                         <button
                           type="button"
                           onClick={() => {
-                            setIsAddingTime(false);
-                            setNewTimeBlock({ day: "Sunday", start: "", end: "" });
+                             setIsAddingTime(false);
+                             setNewTimeBlock({ day: "Sunday", start: "", end: "" });
                           }}
                           className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                         >
@@ -398,13 +400,13 @@ export function DoctorProfileDrawer({
                         <button
                           type="button"
                           onClick={() => {
-                            if (!newTimeBlock.start || !newTimeBlock.end) return;
-                            setFormData({
-                              ...formData,
-                              availability: [...formData.availability, newTimeBlock]
-                            });
-                            setIsAddingTime(false);
-                            setNewTimeBlock({ day: "Sunday", start: "", end: "" });
+                             if (!newTimeBlock.start || !newTimeBlock.end) return;
+                             setFormData({
+                               ...formData,
+                               availability: [...formData.availability, newTimeBlock]
+                             });
+                             setIsAddingTime(false);
+                             setNewTimeBlock({ day: "Sunday", start: "", end: "" });
                           }}
                           disabled={!newTimeBlock.start || !newTimeBlock.end}
                           className="px-3 py-1.5 text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shadow-sm"

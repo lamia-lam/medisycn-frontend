@@ -96,11 +96,15 @@ export default function DoctorDashboard() {
         <div className="flex h-[80vh] items-center justify-center">
           <div className="text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full mb-4">
-               <Clock className="w-8 h-8" />
+              <Clock className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Account Pending Approval</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+              Account Pending Approval
+            </h2>
             <p className="text-gray-500 max-w-md mx-auto">
-              Your account is currently under review by the administration. You will be able to access the dashboard once your license has been verified.
+              Your account is currently under review by the administration. You
+              will be able to access the dashboard once your license has been
+              verified.
             </p>
           </div>
         </div>
@@ -114,7 +118,7 @@ export default function DoctorDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-[1.75rem] font-medium text-gray-800 dark:text-white mb-1">
-              Hello, Dr. {data.doctorName.split(' ').pop()}
+              Hello, {data.doctorName}
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
               Here's what's happening today
@@ -129,7 +133,7 @@ export default function DoctorDashboard() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard
             icon={<Calendar className="w-6 h-6" />}
             label="Today's Appointments"
@@ -139,9 +143,9 @@ export default function DoctorDashboard() {
           />
           <StatCard
             icon={<Users className="w-6 h-6" />}
-            label="Total Patients"
+            label="Patients"
             value={data.stats.totalPatients}
-            trend="Registered patients"
+            trend="Total patients"
             color="bg-blue-500"
           />
           <StatCard
@@ -150,13 +154,6 @@ export default function DoctorDashboard() {
             value={data.stats.totalPrescriptions}
             trend="Total prescriptions"
             color="bg-green-500"
-          />
-          <StatCard
-            icon={<Clock className="w-6 h-6" />}
-            label="Avg Wait Time"
-            value="12 min"
-            trend="-3 min from last week"
-            color="bg-purple-500"
           />
         </div>
 
@@ -181,22 +178,22 @@ export default function DoctorDashboard() {
                     key={apt.id}
                     className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 sm:gap-0 ${index !== data.appointments.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
                   >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800 dark:text-white mb-1">
-                      {apt.patient}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        {apt.time}
-                      </span>
-                      <span className="text-gray-400">{apt.type}</span>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800 dark:text-white mb-1">
+                        {apt.patient}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          {apt.time}
+                        </span>
+                        <span className="text-gray-400">{apt.type}</span>
+                      </div>
+                    </div>
+                    <div className="bg-[#e6f8ec] text-[#1aa053] dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">
+                      {apt.status}
                     </div>
                   </div>
-                  <div className="bg-[#e6f8ec] text-[#1aa053] dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">
-                    {apt.status}
-                  </div>
-                </div>
                 ))
               )}
             </div>
@@ -219,21 +216,21 @@ export default function DoctorDashboard() {
                     key={patient.id}
                     className={`flex items-center justify-between py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors ${index !== data.recentPatients.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""}`}
                   >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-medium">
-                      {patient.name.charAt(0)}
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#eef8fb] text-[#0ab3b3] flex items-center justify-center font-medium">
+                        {patient.name.charAt(0)}
+                      </div>
+                      <p className="font-medium text-gray-800 dark:text-white">
+                        {patient.name}
+                      </p>
                     </div>
-                    <p className="font-medium text-gray-800 dark:text-white">
-                      {patient.name}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                        Last visit
+                      </p>
+                      <p className="text-sm font-medium">{patient.lastVisit}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
-                      Last visit
-                    </p>
-                    <p className="text-sm font-medium">{patient.lastVisit}</p>
-                  </div>
-                </div>
                 ))
               )}
             </div>
