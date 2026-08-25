@@ -51,10 +51,11 @@ function SpecialtyCard({ specialties }: { specialties: Specialty[] }) {
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium text-gray-800">{spec.name}</span>
                 <span
-                  className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 ${isTop
-                    ? "bg-cyan-50 text-cyan-700 border-cyan-200"
-                    : "bg-gray-50 text-gray-600 border-gray-200"
-                    }`}
+                  className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 ${
+                    isTop
+                      ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
+                  }`}
                 >
                   {spec.score.toFixed(1)}%
                 </span>
@@ -86,14 +87,17 @@ function ChatBubble({ msg }: { msg: Message }) {
   const isError = msg.role === "error";
 
   return (
-    <div className={`flex gap-2 items-start ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+    <div
+      className={`flex gap-2 items-start ${isUser ? "flex-row-reverse" : "flex-row"}`}
+    >
       <span
-        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs mt-0.5 ${isUser
-          ? "bg-cyan-600"
-          : isError
-            ? "bg-red-500"
-            : "bg-gradient-to-br from-cyan-500 to-cyan-700"
-          }`}
+        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs mt-0.5 ${
+          isUser
+            ? "bg-cyan-600"
+            : isError
+              ? "bg-red-500"
+              : "bg-gradient-to-br from-cyan-500 to-cyan-700"
+        }`}
       >
         {isUser ? (
           <User className="w-3.5 h-3.5" />
@@ -104,15 +108,17 @@ function ChatBubble({ msg }: { msg: Message }) {
         )}
       </span>
 
-      <div className={`max-w-[85%] flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
-
+      <div
+        className={`max-w-[85%] flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}
+      >
         <div
-          className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-line ${isUser
-            ? "bg-cyan-600 text-white rounded-tr-sm"
-            : isError
-              ? "bg-red-50 text-red-700 border border-red-200 rounded-tl-sm"
-              : "bg-white border border-gray-200 text-gray-700 shadow-sm rounded-tl-sm"
-            }`}
+          className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-line ${
+            isUser
+              ? "bg-cyan-600 text-white rounded-tr-sm"
+              : isError
+                ? "bg-red-50 text-red-700 border border-red-200 rounded-tl-sm"
+                : "bg-white border border-gray-200 text-gray-700 shadow-sm rounded-tl-sm"
+          }`}
         >
           {msg.text}
         </div>
@@ -159,19 +165,28 @@ export function AIChatbot() {
     try {
       // Hit /classify endpoint directly with the user's raw text
       const classifyRes = await fetch(
-        `${API_BASE}/classify?text=${encodeURIComponent(text)}`
+        `${API_BASE}/classify?text=${encodeURIComponent(text)}`,
       );
       if (!classifyRes.ok) throw new Error("Classify API failed");
 
       const classifyData: {
         text: string;
-        detected_symptoms: { canonical: string; state: string; source_text: string; method: string; score: number }[];
+        detected_symptoms: {
+          canonical: string;
+          state: string;
+          source_text: string;
+          method: string;
+          score: number;
+        }[];
         top_specialties: { specialty: string; probability: number }[];
       } = await classifyRes.json();
 
       // Map API response to Specialty shape
       const specialties: Specialty[] = classifyData.top_specialties.map(
-        ({ specialty, probability }) => ({ name: specialty, score: probability })
+        ({ specialty, probability }) => ({
+          name: specialty,
+          score: probability,
+        }),
       );
 
       const topSpecialist = specialties[0]?.name ?? "a specialist";
@@ -254,9 +269,18 @@ export function AIChatbot() {
                   <Bot className="w-3.5 h-3.5" />
                 </span>
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm flex gap-1 items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             )}
@@ -306,10 +330,15 @@ export function AIChatbot() {
           aria-label={isOpen ? "Close Assistant" : "Open Assistant"}
           className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-700 text-white shadow-xl hover:shadow-cyan-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
         >
-          {isOpen ? <Minimize2 className="w-5 h-5" /> : <MessageCircle className="w-6 h-6" />}
+          {isOpen ? (
+            <Minimize2 className="w-5 h-5" />
+          ) : (
+            <MessageCircle className="w-6 h-6" />
+          )}
         </button>
       </div>
     </>
   );
 }
 
+//stable
