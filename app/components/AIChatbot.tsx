@@ -12,13 +12,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-type Specialty = { name: string; score: number };
-
 interface Message {
   id: string;
   role: "user" | "bot" | "error";
   text: string;
-  specialties?: Specialty[];
+  topSpecialist?: string;
 }
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -28,58 +26,6 @@ const INITIAL_MESSAGE: Message = {
   role: "bot",
   text: "Hi! I'm your MediSync AI assistant 👋\n\nDescribe your symptoms and I'll suggest which specialist you should visit.",
 };
-
-// ── Specialty Recommendation Breakdown ────────────────────────────────────
-function SpecialtyCard({ specialties }: { specialties: Specialty[] }) {
-  const maxScore = specialties[0]?.score ?? 1;
-
-  return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden text-sm w-full">
-      <div className="px-3 py-2 bg-gradient-to-r from-cyan-50 to-cyan-100 border-b border-cyan-100">
-        <p className="font-semibold text-cyan-700 text-xs uppercase tracking-wide">
-          Recommended Specialists
-        </p>
-      </div>
-
-      <ul className="divide-y divide-gray-50">
-        {specialties.map((spec, i) => {
-          const pct = Math.round((spec.score / maxScore) * 100);
-          const isTop = i === 0;
-
-          return (
-            <li key={spec.name} className="px-3 py-2.5">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-gray-800">{spec.name}</span>
-                <span
-                  className={`text-[11px] font-semibold border rounded-full px-2 py-0.5 ${
-                    isTop
-                      ? "bg-cyan-50 text-cyan-700 border-cyan-200"
-                      : "bg-gray-50 text-gray-600 border-gray-200"
-                  }`}
-                >
-                  {spec.score.toFixed(1)}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: isTop ? "#06b6d4" : "#94a3b8",
-                  }}
-                />
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="text-[10px] text-gray-400 px-3 py-2 bg-gray-50 border-t border-gray-100">
-        ⚠️ For informational purposes only. Always consult a qualified doctor.
-      </p>
-    </div>
-  );
-}
 
 // ── Chat Bubble ─────────────────────────────────────────────────────────────
 function ChatBubble({ msg }: { msg: Message }) {
@@ -91,13 +37,12 @@ function ChatBubble({ msg }: { msg: Message }) {
       className={`flex gap-2 items-start ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       <span
-        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs mt-0.5 ${
-          isUser
-            ? "bg-cyan-600"
-            : isError
-              ? "bg-red-500"
-              : "bg-gradient-to-br from-cyan-500 to-cyan-700"
-        }`}
+        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs mt-0.5 ${isUser
+          ? "bg-cyan-600"
+          : isError
+            ? "bg-red-500"
+            : "bg-gradient-to-br from-cyan-500 to-cyan-700"
+          }`}
       >
         {isUser ? (
           <User className="w-3.5 h-3.5" />
@@ -109,21 +54,34 @@ function ChatBubble({ msg }: { msg: Message }) {
       </span>
 
       <div
-        className={`max-w-[85%] flex flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}
+        className={`max-w-[85%] flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}
       >
         <div
-          className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-line ${
-            isUser
-              ? "bg-cyan-600 text-white rounded-tr-sm"
-              : isError
-                ? "bg-red-50 text-red-700 border border-red-200 rounded-tl-sm"
-                : "bg-white border border-gray-200 text-gray-700 shadow-sm rounded-tl-sm"
-          }`}
+          className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-line ${isUser
+            ? "bg-cyan-600 text-white rounded-tr-sm"
+            : isError
+              ? "bg-red-50 text-red-700 border border-red-200 rounded-tl-sm"
+              : "bg-white border border-gray-200 text-gray-700 shadow-sm rounded-tl-sm"
+            }`}
         >
           {msg.text}
         </div>
-        {msg.specialties && msg.specialties.length > 0 && (
-          <SpecialtyCard specialties={msg.specialties} />
+
+        {msg.topSpecialist && (
+          <a
+            href={`https://www.google.com/search?q=${encodeURIComponent(msg.topSpecialist)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 active:bg-cyan-800 text-white text-xs font-semibold transition-colors duration-150 shadow-sm"
+          >
+            <Stethoscope className="w-3 h-3" />
+            {msg.topSpecialist}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
         )}
       </div>
     </div>
@@ -178,18 +136,32 @@ export function AIChatbot() {
           method: string;
           score: number;
         }[];
+        possible_conditions?: string[];
         top_specialties: { specialty: string; probability: number }[];
       } = await classifyRes.json();
 
-      // Map API response to Specialty shape
-      const specialties: Specialty[] = classifyData.top_specialties.map(
-        ({ specialty, probability }) => ({
-          name: specialty,
-          score: probability,
-        }),
-      );
+      const topSpecialist = classifyData.top_specialties?.[0]?.specialty ?? "General Physician";
+      const conditions = classifyData.possible_conditions || [];
 
-      const topSpecialist = specialties[0]?.name ?? "a specialist";
+      // Format detected symptoms
+      const presentSymptoms = classifyData.detected_symptoms
+        .filter((s) => s.state === "PRESENT")
+        .map((s) => s.canonical.replace(/_/g, " "));
+
+      let responseText = "";
+      if (presentSymptoms.length > 0) {
+        responseText += `I identified the following symptoms: **${presentSymptoms.join(", ")}**.\n\n`;
+      }
+
+      if (conditions.length > 0) {
+        const formattedConditions = conditions.map((c) => `**${c}**`).join(" or ");
+        responseText += `These symptoms may be associated with conditions like ${formattedConditions}.\n\n`;
+      }
+
+      const article = /^[aeiou]/i.test(topSpecialist) ? "an" : "a";
+      responseText += `I recommend consulting ${article} **${topSpecialist}**.
+
+⚠️ This is for informational purposes only. For medical advice or diagnosis, consult a professional. AI responses may include mistakes.`;
 
       // Add AI response to state
       setMessages((prev) => [
@@ -197,8 +169,8 @@ export function AIChatbot() {
         {
           id: Math.random().toString(36).slice(2),
           role: "bot",
-          text: `Based on your symptoms, I recommend consulting a **${topSpecialist}**. Here is the prediction breakdown:`,
-          specialties,
+          text: responseText,
+          topSpecialist,
         },
       ]);
     } catch {
@@ -309,8 +281,8 @@ export function AIChatbot() {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 text-center mt-1.5">
-              Press Enter to send · Powered by MediSync FastAPI
+            <p className="text-[9.5px] text-gray-400 text-center mt-1.5 leading-tight px-1">
+              This is for informational purposes only. For medical advice or diagnosis, consult a professional. AI responses may include mistakes.
             </p>
           </div>
         </div>
