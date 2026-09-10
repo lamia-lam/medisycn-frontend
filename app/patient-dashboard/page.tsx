@@ -314,7 +314,7 @@ export default function PatientDashboard() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <p className="font-medium text-gray-800 dark:text-white text-sm">
-                            {rx.diagnosis}
+                            {rx.diagnosis || "Prescription"}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">
                             {rx.doctor?.name}

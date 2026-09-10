@@ -61,10 +61,17 @@ export async function POST(req: Request) {
       { expiresIn: "1d" },
     );
 
-    return Response.json({
+    const response = Response.json({
       token,
       role: user.role,
     });
+
+    response.headers.set(
+      "Set-Cookie",
+      `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
+    );
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return Response.json(

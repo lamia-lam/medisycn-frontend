@@ -310,7 +310,7 @@ export default function PatientHistoryPage() {
                               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                                 <div>
                                   <p className="font-semibold text-gray-800 dark:text-white mb-0.5">
-                                    {prescription.diagnosis}
+                                    {prescription.diagnosis || "Prescription"}
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-gray-400">
                                     <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">
@@ -478,7 +478,7 @@ export default function PatientHistoryPage() {
                       Diagnosis
                     </span>
                     <span className="text-gray-800 dark:text-white text-right max-w-[60%]">
-                      {recordsModal.diagnosis}
+                      {recordsModal.diagnosis || "—"}
                     </span>
                   </div>
                   <div className="flex justify-between">

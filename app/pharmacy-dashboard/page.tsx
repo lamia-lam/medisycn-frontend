@@ -44,8 +44,8 @@ function getRelativeTime(dateString: string) {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-  
-  if (diffInMinutes < 1) return 'Just now';
+
+  if (diffInMinutes < 1) return "Just now";
   if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours} hours ago`;
@@ -92,21 +92,26 @@ export default function PharmacyDashboard() {
     );
   }
 
-  const { stats, recentPrescriptions, lowStockMedicines, recentPatients } = data || {
-    stats: { prescriptionsProcessed: 0, lowStockMedicines: 0, totalMedicines: 0, outOfStock: 0, patientsServed: 0 },
-    recentPrescriptions: [],
-    lowStockMedicines: [],
-    recentPatients: []
-  };
+  const { stats, recentPrescriptions, lowStockMedicines, recentPatients } =
+    data || {
+      stats: {
+        prescriptionsProcessed: 0,
+        lowStockMedicines: 0,
+        totalMedicines: 0,
+        outOfStock: 0,
+        patientsServed: 0,
+      },
+      recentPrescriptions: [],
+      lowStockMedicines: [],
+      recentPatients: [],
+    };
 
   return (
     <DashboardLayout sidebarItems={sidebarItems} userRole="Pharmacy">
       <div className="space-y-6">
         {/* Header Banner */}
         <div className="rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 p-6 text-white shadow-sm">
-          <h2 className="text-2xl font-semibold mb-1">
-            Good Morning, Pharmacist!
-          </h2>
+          <h2 className="text-2xl font-semibold mb-1">Hello, Sir!</h2>
           <p className="text-teal-100 text-sm">MediSync Pharmacy</p>
           <p className="text-teal-100 text-sm mt-0.5">{currentDate}</p>
         </div>
@@ -162,7 +167,9 @@ export default function PharmacyDashboard() {
             </div>
             <div className="space-y-3">
               {recentPrescriptions.length === 0 ? (
-                <p className="text-sm text-gray-500">No recent prescriptions processed.</p>
+                <p className="text-sm text-gray-500">
+                  No recent prescriptions processed.
+                </p>
               ) : (
                 recentPrescriptions.map((prescription: any) => (
                   <div
@@ -194,7 +201,8 @@ export default function PharmacyDashboard() {
                       <div className="flex items-center justify-end gap-2">
                         <Badge
                           variant={
-                            prescription.status === "Processed" || prescription.status === "Completed"
+                            prescription.status === "Processed" ||
+                            prescription.status === "Completed"
                               ? "success"
                               : "default"
                           }
@@ -286,7 +294,10 @@ export default function PharmacyDashboard() {
               <tbody>
                 {recentPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-4 text-sm text-gray-500 text-center">
+                    <td
+                      colSpan={4}
+                      className="px-4 py-4 text-sm text-gray-500 text-center"
+                    >
                       No recent patient activity.
                     </td>
                   </tr>
@@ -294,10 +305,11 @@ export default function PharmacyDashboard() {
                   recentPatients.map((patient: any, index: number) => (
                     <tr
                       key={index}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${index !== recentPatients.length - 1
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${
+                        index !== recentPatients.length - 1
                           ? "border-b border-gray-100 dark:border-gray-700"
                           : ""
-                        }`}
+                      }`}
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
@@ -331,4 +343,3 @@ export default function PharmacyDashboard() {
     </DashboardLayout>
   );
 }
-

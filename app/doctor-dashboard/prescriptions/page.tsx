@@ -431,7 +431,7 @@ export default function PrescriptionsPage() {
                           Diagnosis
                         </span>
                         <span className="text-right font-medium text-gray-700 dark:text-gray-300 text-xs truncate max-w-[200px]">
-                          {prescription.diagnosis}
+                          {prescription.diagnosis || "—"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">

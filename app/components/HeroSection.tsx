@@ -69,7 +69,7 @@ export default function HeroSection() {
         <div className="hidden lg:block animate-fade-in-right animate-float">
           <div className="relative animate-pulse-glow rounded-3xl">
             <Image
-              src="/homepage_banner.png"
+              src="/homePage.png"
               alt="MediSync Healthcare Platform"
               width={600}
               height={500}

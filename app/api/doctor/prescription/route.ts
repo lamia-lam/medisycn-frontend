@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
     const { patientId, diagnosis, symptoms, medicines, tests, notes } = body;
 
     // ── Validate required fields ──────────────────────────────────────────────
-    if (!patientId || !diagnosis || !medicines) {
+    if (!patientId || !medicines) {
       return NextResponse.json(
-        { error: "patientId, diagnosis, and medicines are required" },
+        { error: "patientId and medicines are required" },
         { status: 400 },
       );
     }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       data: {
         doctorId: doctor!.id,
         patientId: patient.id,
-        diagnosis: String(diagnosis),
+        diagnosis: diagnosis ? String(diagnosis) : "",
         symptoms: symptoms ? String(symptoms) : null,
         medicines,                          // stored as Json
         tests: tests ?? null,              // stored as Json (nullable)

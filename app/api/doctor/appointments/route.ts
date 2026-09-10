@@ -42,20 +42,65 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  const result = appointments.map((a) => ({
-    id: a.id,
-    date: a.date,
-    type: a.type,
-    notes: a.notes,
-    status: a.status,
-    serialNo: a.serialNo,
-    patientId: a.patient.id,
-    patientName: a.patient.user.name,
-    patientPhone: a.patient.user.phone,
-    patientGender: a.patient.gender,
-    patientBloodGroup: a.patient.bloodGroup,
-    createdAt: a.createdAt,
-  }));
+  const format12Hour = (time24: string) => {
+    if (!time24) return "";
+    const [h, m = "00"] = time24.split(":");
+    const hours = parseInt(h, 10);
+    if (isNaN(hours)) return time24;
+    const suffix = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${m.padStart(2, "0")} ${suffix}`;
+  };
+
+  let doctorSchedule: Array<{ day: string; start: string; end: string }> = [];
+  if (doctor.availability) {
+    try {
+      doctorSchedule =
+        typeof doctor.availability === "string"
+          ? JSON.parse(doctor.availability)
+          : (doctor.availability as any);
+      if (!Array.isArray(doctorSchedule)) {
+        doctorSchedule = [];
+      }
+    } catch (e) {
+      doctorSchedule = [];
+    }
+  }
+
+  const result = appointments.map((a) => {
+    const aptDate = new Date(a.date);
+    const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(aptDate);
+    const matchingSchedule = doctorSchedule.filter(
+      (s) => s.day && s.day.toLowerCase() === dayName.toLowerCase()
+    );
+
+    let timeSlot = "";
+    if (matchingSchedule.length > 0) {
+      timeSlot = matchingSchedule
+        .map((s) => (s.start && s.end ? `${format12Hour(s.start)} - ${format12Hour(s.end)}` : format12Hour(s.start)))
+        .filter(Boolean)
+        .join(", ");
+    }
+    if (!timeSlot && (aptDate.getHours() !== 0 || aptDate.getMinutes() !== 0)) {
+      timeSlot = aptDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    }
+
+    return {
+      id: a.id,
+      date: a.date,
+      timeSlot: timeSlot || "—",
+      type: a.type,
+      notes: a.notes,
+      status: a.status,
+      serialNo: a.serialNo,
+      patientId: a.patient.id,
+      patientName: a.patient.user.name,
+      patientPhone: a.patient.user.phone,
+      patientGender: a.patient.gender,
+      patientBloodGroup: a.patient.bloodGroup,
+      createdAt: a.createdAt,
+    };
+  });
 
   return NextResponse.json(result);
 }

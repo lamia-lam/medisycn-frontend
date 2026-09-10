@@ -594,7 +594,6 @@ export default function NewPrescriptionPage() {
                   onChange={(e) => setDiagnosis(e.target.value)}
                   placeholder="Enter primary diagnosis"
                   className={inputClass}
-                  required
                 />
               </div>
               <div>

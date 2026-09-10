@@ -41,12 +41,10 @@ export default function LoginPage() {
         return;
       }
 
-      if (!data.token || !data.role) {
+      if (!data.role) {
         setError("Invalid login response from server.");
         return;
       }
-
-      document.cookie = `token=${data.token}; path=/; max-age=86400`;
 
       if (data.role === "DOCTOR") {
         router.replace("/doctor-dashboard");
